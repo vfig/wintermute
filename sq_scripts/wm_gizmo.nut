@@ -1,3 +1,17 @@
+class StartMovingTerrain extends SqRootScript {
+    // Summon elevaor to its 'next' TerrPt when the mission starts.
+    function OnSim() {
+        if (message().starting) {
+            local link = Link.GetOne("TPathNext", self);
+            if (link!=0) {
+                PostMessage(LinkDest(link), "TurnOn");
+            } else {
+                print("ERROR: Cannot find TPathNext for elevator "+self);
+            }
+        }
+    }
+}
+
 // Base script for toggling conveyor speed. Use this on ConvTops.
 class ToggleConveyorTop extends SqRootScript {
     function OnTurnOn() {

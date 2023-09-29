@@ -1,0 +1,38 @@
+## PistonHead elevators must start inactive.
+
+In order to have all the pistons work at the same speed, and importantly the same acceleration/deceleration at the stroke ends, each has a pair of TerrPt markers. Two of the pistons start at the top/bottom ends of the stroke, but the other four need to start at offset positions. To achieve this, these four have an additional TerrPt that links to the main stroke markers, like this:
+            
+    [TerrPt]  --------TPath------>  [TerrPt]
+     (top)    <------TPath--------  (bottom)
+                                       ^  ^
+                                       |  |
+             [TerrPt] -----TPath------/   |
+             (middle)                     |
+                ^                         |
+                |                        /
+             TPathInit                  /
+                |                      /
+           [PistonHead] --TPathNext---/
+
+Note that the TPathNext link is automatically created, and not visible unless link_show_all is turned on.
+
+With this setup, the PistonHead elevators must start with MovingTerrain: FALSE, or an assertion failure occurs when the mission is loaded. Consequently, the StartMovingTerrain script is used to start the pistons on the first frame after the mission starts. This results in the elevators moving normally.
+
+Note that simply sending TurnON to the PistonHead elevators, nor manually setting the MovingTerrain property to true is sufficient to start them moving correctly; each of these leaves at least one of the pistons stopped; I am not sure why.
+
+If the four PistonHead elevators with the extra TerrPt had MovingTerrain: TRUE set in the editor, then an assertion failure occurs when the mission is loded:
+
+    Assertion Failed
+    Singleton link expected (TPath [0 --> 70]) [2]  (File: RELATION.CPP, Line: 199)
+    (Yes to trap, No to exit, Cancel to ignore).
+
+The monolog contains a little more detail, and shows the warnings and assertions repeated several times with different TerrPt ids:
+
+    WARNING: Caller expecting a singleton link on (TPath [* --> 70]), only first link will be used
+       Actual links were:
+          A TerrPt (71) --> A TerrPt (70) [02D10001]
+          A TerrPt (41) --> A TerrPt (70) [02D10006]
+
+    ASSERT: [RELATION.CPP@199] Singleton link expected (TPath [0 --> 70]) [2]
+
+The cause of the assertion failure is in PHMTERR.CPP:PostLoadMovingTerrain(), where the initial velocity of the moving terrain elevator is determined by trying to identify the TerrPt leading up to the elevator's current goal (as indicated by its TPathNext link). It calls TPath->GetSingleLink(*, TPathNext.dest) as it assumes there can only be one TPath link to this goal TerrPt. The assertion is raised in GetSingleLink() when it finds there is more than one. However, if the assertion is ignored, GetSingleLink() just returns the first link it finds; and since both TPath links in this setup have the same velocity in their properties, it doesn't actually matter for PostLoadMovingTerrain() which one it gets; it will update the elevator with the correct velocity regardless. Consequently, this assertion is safe to ignore. Note, however, that ignoring it might mean other GetSingleLink() assertions for other link types also get ignored; so there is a chance of bad edits introducing other singleton link violations and not being notified of them; and so we start the elevators disabled and activate them via script, so as to avoid this possibility.
