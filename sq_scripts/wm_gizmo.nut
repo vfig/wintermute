@@ -54,13 +54,10 @@ class ToggleConveyorBelt extends ToggleConveyorTop {
         }
     }
     function ApplyConveyorSpeed(whatTouchedMe, enable) {
-        const degreesPerRadian = 57.295779513;
-        local convVel = vector();
-        local convFacing = vector();
-        local speed = 0.0;
         if (enable) {
             // when an object contacts us, set their velocity to that of conveyor belt
-            convFacing = Object.Facing(self);
+            local convVel = vector();
+            local speed = 0.0;
             // hack - use the x component of the conveyor belt velocity as the
             //    speed of the belt itself
             if (Property.Possessed(self, "ConveyorVel")) {
@@ -69,10 +66,18 @@ class ToggleConveyorBelt extends ToggleConveyorTop {
             } else {
                 speed = 5.0;  // default conveyor belt speed
             }
-            // only pay attention to belt rotation around z axis (for now)
-            convVel.x = speed * cos(convFacing.z / degreesPerRadian);
-            convVel.y = speed * sin(convFacing.z / degreesPerRadian);
-            convVel.z = 0.0;
+            // Use the entire direction of the conveyor to calculate velocity.
+            local convDir = Object.ObjectToWorld(self, vector(1.0,0.0,0.0))-Object.Position(self);
+            convDir.Normalize();
+            convVel.x = speed*convDir.x;
+            convVel.y = speed*convDir.y;
+            convVel.z = speed*convDir.z;
+            // HACK: increase velocity to counteract gravity on upward conveyors.
+            if (convDir.z>0.0) {
+                local hackFactor = 1.0/(1.0-fabs(convDir.z));
+                convVel.x = hackFactor*convVel.x;
+                convVel.y = hackFactor*convVel.y;
+            }
             if (whatTouchedMe == Object.Named("Player")) {
                 // object is an AI, or the player
                 Property.SetSimple(whatTouchedMe, "ConveyorVel", convVel);
