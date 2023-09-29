@@ -29,7 +29,7 @@ class FacWorker extends SqRootScript {
         if (link==0) { print("No Route link to obj."); Reply(false); return; }
         local obj = LinkDest(link);
         Link.Destroy(link);
-        Container.Add(obj, self, eDarkContainType.kContainTypeAlt); //kContainTypeHand);
+        Container.Add(obj, self, eDarkContainType.kContainTypeAlt);
         Reply(true);
     }
 }
