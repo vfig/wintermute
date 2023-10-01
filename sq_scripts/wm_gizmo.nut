@@ -117,3 +117,77 @@ class ToggleConveyorBelt extends ToggleConveyorTop {
         }
     }
 }
+
+/* SameTeamCamera: a camera that, when it seems members of its own
+   team within range, will turn on certain devices; and turn them
+   back off again, after a delay, if it no longer sees its own team
+   members. Devices must be linked from the camera with a ScriptParams
+   link, with the value set to "SameTeamDevice".
+*/
+const kSameTeamCameraInterval = 1.0;
+const kSameTeamCameraRequiredLevel = 2;
+const kSameTeamCameraTimeout = 5.0;
+const kSameTeamCameraRange = 25.0;
+
+class SameTeamCamera extends SqRootScript {
+    function OnSim() {
+        if (message().starting) {
+            SetOneShotTimer("LookForSameTeam", kSameTeamCameraInterval);
+        }
+    }
+
+    function OnTimer() {
+        if (message().name=="LookForSameTeam") {
+            LookForSameTeam();
+            SetOneShotTimer("LookForSameTeam", kSameTeamCameraInterval);
+        }
+    }
+
+    function LookForSameTeam() {
+        local sawSomething = false;
+        local myTeam = Property.Get(self, "AI_Team");
+        local myPosition = Object.Position(self);
+        local links = Link.GetAll("AIAwareness", self);
+        foreach (link in links) {
+            local target = LinkDest(link);
+            local targetTeam = Property.Get(target, "AI_Team");
+            if (targetTeam!=myTeam) continue;
+            local level = LinkTools.LinkGetData(link, "Level");
+            if (level<kSameTeamCameraRequiredLevel) continue;
+            local targetPosition = Object.Position(target);
+            if ((targetPosition-myPosition).Length()>kSameTeamCameraRange) continue;
+            local flags = LinkTools.LinkGetData(link, "Flags");
+            local fSeen = ((flags&0x01)!=0);
+            local fHaveLOS = ((flags&0x08)!=0);
+            local fFirstHand = ((flags&0x80)!=0);
+            sawSomething = true;
+        }
+        local now = GetTime();
+        local isActive = IsDataSet("SameTeamCameraLastSeen");
+        if (sawSomething) {
+            SetData("SameTeamCameraLastSeen", now);
+        }
+        if (!isActive && sawSomething) {
+            ActivateDevices(true);
+            Sound.PlaySchema(self, "cambak");
+        } else if (isActive && !sawSomething) {
+            local lastSeen = GetData("SameTeamCameraLastSeen");
+            if ((now-lastSeen)>=kSameTeamCameraTimeout) {
+                ClearData("SameTeamCameraLastSeen");
+                ActivateDevices(false);
+                Sound.PlaySchema(self, "camlos");
+            }
+        }
+    }
+
+    function ActivateDevices(turnOn) {
+        local msg = (turnOn? "TurnOn":"TurnOff");
+        local links = Link.GetAll("ScriptParams", self);
+        foreach (link in links) {
+            local value = LinkTools.LinkGetData(link, "");
+            if (value=="SameTeamDevice") {
+                SendMessage(LinkDest(link), msg);
+            }
+        }
+    }
+}
