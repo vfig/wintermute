@@ -11,6 +11,7 @@
 // 4. CD link from the controller to the elevator.
 // 5. On each call button, door, and TerrPt, add the "Schema: Message"
 //    property, with its value being the floor number.
+// 6. Put the ElevatorReporter script on the elevator.
 //
 // Floor numbers can start at 0, or at 1, it is up to you.
 //
