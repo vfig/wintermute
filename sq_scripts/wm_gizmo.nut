@@ -191,3 +191,54 @@ class SameTeamCamera extends SqRootScript {
         }
     }
 }
+
+class MirrorMirror extends SqRootScript {
+    _reflection = null;
+    _reflectionAdjust = vector(0.5,0.0,-1.5);
+
+    function FindReflection() {
+        local links = Link.GetAll("ScriptParams", self);
+        foreach (link in links) {
+            local value = LinkTools.LinkGetData(link, "");
+            if (value=="Reflection") {
+                _reflection = LinkDest(link);
+                break;
+            }
+        }
+    }
+
+    function UpdateReflection() {
+        if (_reflection==null) FindReflection();
+        if (_reflection==null) {
+            print("ERROR: reflection not found.");
+            Property.Set(self, "StTweqBlink", "AnimS", 0);
+            return;
+        }
+        local mirrorPos = Object.Position(self);
+        local player = Object.Named("Player");
+        local playerPos = Object.Position(player);
+        local playerFacing = Object.Facing(player);
+        local headOffset = vector();
+        local ignoreFacing = vector();
+        Object.CalcRelTransform(player, player, headOffset, ignoreFacing, 4, 0);
+        headOffset = Object.ObjectToWorld(player, headOffset) - playerPos;
+        local diffPos = mirrorPos-playerPos;
+        local reflectPos = vector();
+        // NOTE: this will only work for mirroring across the Y axis:
+        reflectPos.x = mirrorPos.x + diffPos.x + headOffset.x + _reflectionAdjust.x;
+        reflectPos.y = mirrorPos.y - diffPos.y - headOffset.y + _reflectionAdjust.y;
+        reflectPos.z = mirrorPos.z - diffPos.z - headOffset.z + _reflectionAdjust.z;
+        local reflectFac = vector();
+        reflectFac.x = 0;
+        reflectFac.y = 0;
+        reflectFac.z = 180-playerFacing.z;
+        Object.Teleport(_reflection, reflectPos, reflectFac);
+    }
+
+    function OnTweqComplete() {
+        if (message().Type==eTweqType.kTweqTypeFlicker
+        && message().Op==eTweqOperation.kTweqOpFrameEvent) {
+            UpdateReflection();
+        }
+    }
+}
