@@ -242,3 +242,17 @@ class MirrorMirror extends SqRootScript {
         }
     }
 }
+
+class FrobTweqs extends SqRootScript {
+    function OnFrobWorldEnd() {
+        ActReact.React("tweq_control", 1.0, self, 0,
+            eTweqType.kTweqTypeAll, eTweqDo.kTweqDoDefault);
+        Sound.HaltSchema(self);
+        Sound.PlayEnvSchema(self, "Event Activate", self, 0,
+            eEnvSoundLoc.kEnvSoundAtObjLoc);
+    }
+
+    function OnTweqComplete() {
+        Sound.HaltSchema(self);
+    }
+}

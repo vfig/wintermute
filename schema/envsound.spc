@@ -48,7 +48,7 @@ tag DirectionState Forward Reverse
 
 
 //DEVICES
-tag DeviceType GenPotion TimedPotion HolyH20 BlueLight CauldLvr MoldLvr CrunchyFood  SoftFood Piano Whistle LitFlare PowderKeg Lockbox Banner
+tag DeviceType GenPotion TimedPotion HolyH20 BlueLight CauldLvr MoldLvr CrunchyFood  SoftFood Piano Whistle LitFlare PowderKeg Lockbox Banner Contraption
 
 tag AlarmType Gong BellSm RmzAlarm DinnerBell Alarm MechRedAlarm MechTowerAlarm FlickerLight
 
