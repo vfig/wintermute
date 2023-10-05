@@ -14,14 +14,24 @@ class StartMovingTerrain extends SqRootScript {
 
 // Base script for toggling conveyor speed. Use this on ConvTops.
 class ToggleConveyorTop extends SqRootScript {
+    function GetMeta() {
+        const key = "ToggleConveyor_MetaProp";
+        if (key in userparams()) {
+            local name = userparams()[key];
+            return Object.Named(name);
+        }
+        return 0;
+    }
     function OnTurnOn() {
-        local meta = Object.Named("M-FastConveyor");
+        local meta = GetMeta();
+        if (meta==0) return;
         if (! Object.HasMetaProperty(self, meta)) {
             Object.AddMetaProperty(self, meta);
         }
     }
     function OnTurnOff() {
-        local meta = Object.Named("M-FastConveyor");
+        local meta = GetMeta();
+        if (meta==0) return;
         if (Object.HasMetaProperty(self, meta)) {
             Object.RemoveMetaProperty(self, meta);
         }
@@ -34,11 +44,11 @@ class ToggleConveyorTop extends SqRootScript {
 class ToggleConveyorBelt extends ToggleConveyorTop {
     function OnTurnOn() {
         base.OnTurnOn();
-        UpdateConveyorSpeed();
+        PostMessage(self, "UpdateConveyorSpeed");
     }
     function OnTurnOff() {
         base.OnTurnOff();
-        UpdateConveyorSpeed();
+        PostMessage(self, "UpdateConveyorSpeed");
     }
     function OnBeginScript() {
         Physics.SubscribeMsg(self, ePhysScriptMsgType.kContactMsg);
@@ -63,7 +73,12 @@ class ToggleConveyorBelt extends ToggleConveyorTop {
                 if (link!=0) {
                     Link.Destroy(link);
                 }
-                ApplyConveyorSpeed(whatTouchedMe, false);
+                // If another Population link exists, we assume (rightly or
+                // wrongly) that another conveyor is gonna be controlling the
+                // velocity of the object, so we leave it alone.
+                if (! Link.AnyExist("~Population", whatTouchedMe)) {
+                    ApplyConveyorSpeed(whatTouchedMe, false);
+                }
             }
         }
     }
@@ -110,11 +125,42 @@ class ToggleConveyorBelt extends ToggleConveyorTop {
             }
         }
     }
-    function UpdateConveyorSpeed() {
+    function OnUpdateConveyorSpeed() {
         local links = Link.GetAll("Population", self);
         foreach (link in links) {
             ApplyConveyorSpeed(LinkDest(link), true);
         }
+    }
+}
+
+/* Object suited for riding looping conveyors, that detects if it gets
+   stuck and tries to unstick itself. */
+class ConveyorRider extends SqRootScript {
+    function OnSim() {
+        if (message().starting) {
+            SetData("LastPosition", Object.Position(self));
+            SetOneShotTimer("AmIStuck?", 1.0);
+        }
+    }
+
+    function OnTimer() {
+        if (message().name=="AmIStuck?") {
+            local lastPos = GetData("LastPosition");
+            local pos = Object.Position(self);
+            local moved = (pos-lastPos).Length();
+            SetData("LastPosition", pos);
+            if (moved <= 1.0) {
+                print("ConveyorRider "+self+" got stuck; trying to unstick.");
+                Unstick();
+            }
+            SetOneShotTimer("AmIStuck?", 1.0);
+        }
+    }
+
+    function Unstick() {
+        local pos = Object.Position(self);
+        local fac = Object.Facing(self);
+        Object.Teleport(self, pos+vector(0,0,0.5), fac);
     }
 }
 
