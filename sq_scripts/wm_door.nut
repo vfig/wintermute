@@ -1,3 +1,13 @@
+/* Put this on a door to have it open when the mission starts. */
+class DoorStartsOpen extends SqRootScript
+{
+    function OnSim() {
+        if (message().starting) {
+            SendMessage(self, "Open");
+        }
+    }
+}
+
 /* Put this on a door to make its joint tweqs run in reverse before
    opening the door, and forward after closing the door.
    (The stock SubDoorJoints script runs tweqs as the door opens)
