@@ -302,3 +302,110 @@ class FrobTweqs extends SqRootScript {
         Sound.HaltSchema(self);
     }
 }
+
+/* Crank used to retract a locking rod. Note that although this uses a Lock
+   link to a lockbox (so that unlocking the lockbox will retract the rod),
+   the crank itself ignores the lockbox state, and is only locked once the rod
+   is fully retracted. */
+class LockingMechCrank extends SqRootScript {
+    function IsLocked() {
+        return GetProperty(self, "Locked");
+    }
+
+    function Open() {
+        SetData("IsActive", true);
+        ActReact.React("tweq_control", 1.0, self, 0,
+            eTweqType.kTweqTypeAll, eTweqDo.kTweqDoForward);
+        Sound.HaltSchema(self);
+        Sound.PlayEnvSchema(self, "Event Activate", self, 0,
+            eEnvSoundLoc.kEnvSoundAtObjLoc);
+        Link.BroadcastOnAllLinks(self, "TurnOn", "ControlDevice");
+    }
+
+    function Close() {
+        SetData("IsActive", true);
+        ActReact.React("tweq_control", 1.0, self, 0,
+            eTweqType.kTweqTypeAll, eTweqDo.kTweqDoReverse);
+        Sound.HaltSchema(self);
+        Sound.PlayEnvSchema(self, "Event Deactivate", self, 0,
+            eEnvSoundLoc.kEnvSoundAtObjLoc);
+        Link.BroadcastOnAllLinks(self, "TurnOff", "ControlDevice");
+    }
+
+    function OnFrobWorldBegin() {
+        if (IsLocked()) {
+            Sound.PlayEnvSchema(self, "Event Reject, Operation FrobLock", self, 0,
+                eEnvSoundLoc.kEnvSoundAtObjLoc);
+            return;
+        }
+        Open();
+    }
+
+    function OnFrobWorldEnd() {
+        if (IsLocked()) {
+            return;
+        }
+        Close();
+    }
+
+    function OnWorldDeSelect() {
+        if (IsLocked()) {
+            return;
+        }
+        if (GetData("IsActive")) {
+            Close();
+        }
+    }
+
+    function OnNowUnlocked() {
+        if (IsLocked()) {
+            return;
+        }
+        Open();
+    }
+
+    function OnTweqComplete() {
+        if (message().Op==eTweqOperation.kTweqOpHaltTweq) {
+            Sound.HaltSchema(self);
+            SetData("IsActive", false);
+        }
+
+        if (message().Op==eTweqOperation.kTweqOpHaltTweq
+        && message().Dir==eTweqDirection.kTweqDirForward) {
+            // Lock in the open state.
+            SetProperty("Locked", true);
+            SetProperty("FrobInfo", "World Action", 0);
+            // Ensure all attached pieces are also in the 'open' state,
+            // just in case:
+            Link.BroadcastOnAllLinks(self, "TurnOn", "ControlDevice");
+        }
+    }
+}
+
+class LockingMechGear extends SqRootScript {
+    function OnTurnOn() {
+        local flags = GetProperty("TrapFlags");
+        local isReversed = ((flags&TRAPF_INVERT)!=0);
+        local action = (isReversed? eTweqDo.kTweqDoReverse:eTweqDo.kTweqDoForward);
+        ActReact.React("tweq_control", 1.0, self, 0,
+            eTweqType.kTweqTypeAll, action);
+        Sound.HaltSchema(self);
+        Sound.PlayEnvSchema(self, "Event ActiveLoop", self, 0,
+            eEnvSoundLoc.kEnvSoundAtObjLoc);
+    }
+
+    function OnTurnOff() {
+        local flags = GetProperty("TrapFlags");
+        local isReversed = ((flags&TRAPF_INVERT)!=0);
+        local action = (isReversed? eTweqDo.kTweqDoForward:eTweqDo.kTweqDoReverse);
+        ActReact.React("tweq_control", 1.0, self, 0,
+            eTweqType.kTweqTypeAll, action);
+        Sound.HaltSchema(self);
+        Sound.PlayEnvSchema(self, "Event ActiveLoop", self, 0,
+            eEnvSoundLoc.kEnvSoundAtObjLoc);
+    }
+
+    function OnTweqComplete() {
+        Sound.HaltSchema(self);
+    }
+}

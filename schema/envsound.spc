@@ -32,7 +32,7 @@ tag_int Health 	//% of Health leftover
 //STATECHANGE EVENT TAGS -Doors & Levers
 
 //DOOR TYPES
-tag DoorType Wood1Sm Wood2Lg Wood3Vic Wood4Off Shutter Barricade Metal Metal2Hvy Metal3Wh Metal4Mech Cell Bars OblManhole Manhole Slide1 Slide2Sm Slide3Fast Blast Pressure SubHatch GiantPort
+tag DoorType Wood1Sm Wood2Lg Wood3Vic Wood4Off Shutter Barricade Metal Metal2Hvy Metal3Wh Metal4Mech Cell Bars OblManhole Manhole Slide1 Slide2Sm Slide3Fast Blast Pressure SubHatch GiantPort LockingBar
 
 tag BoxType BoxWood BoxMoney BoxChest Sarcof GymLocker Safe
 
@@ -48,7 +48,7 @@ tag DirectionState Forward Reverse
 
 
 //DEVICES
-tag DeviceType GenPotion TimedPotion HolyH20 BlueLight CauldLvr MoldLvr CrunchyFood  SoftFood Piano Whistle LitFlare PowderKeg Lockbox Banner Contraption
+tag DeviceType GenPotion TimedPotion HolyH20 BlueLight CauldLvr MoldLvr CrunchyFood SoftFood Piano Whistle LitFlare PowderKeg Lockbox Banner Contraption LockingBarCrank LockingBarGear
 
 tag AlarmType Gong BellSm RmzAlarm DinnerBell Alarm MechRedAlarm MechTowerAlarm FlickerLight
 
