@@ -575,6 +575,31 @@ class PathElevatorController extends SqRootScript {
         // TODO: test all variations and log them above.
         // TODO: dump all links to/from the elevator for sanity checking the
         //       failing summonses?
+
+/*
+        print("======================================")
+        local sl = sLink();
+        foreach (l in Link.GetAll("TPath")) {
+            sl.LinkGet(l);
+            print("TPath "
+                +Object.GetName(Object.Archetype(sl.source))+" "+sl.source
+                +" -> "+Object.GetName(Object.Archetype(sl.dest))+" "+sl.dest);
+        }
+        foreach (l in Link.GetAll("TPathInit")) {
+            sl.LinkGet(l);
+            print("TPathInit "
+                +Object.GetName(Object.Archetype(sl.source))+" "+sl.source
+                +" -> "+Object.GetName(Object.Archetype(sl.dest))+" "+sl.dest);
+        }
+        foreach (l in Link.GetAll("TPathNext")) {
+            sl.LinkGet(l);
+            print("TPathNext "
+                +Object.GetName(Object.Archetype(sl.source))+" "+sl.source
+                +" -> "+Object.GetName(Object.Archetype(sl.dest))+" "+sl.dest);
+        }
+        print(". . . . . . . . . . . . . . . . . . . ")
+*/
+
         local elevator = GetElevator();
         if (elevator==0) {
             LogError("Cannot find elevator.");
@@ -627,6 +652,7 @@ class PathElevatorController extends SqRootScript {
         Link.Create("TPathNext", elevator, nextStopPt);
         print("... created TPathNext link to "+nextStopPt);
         // TODO: do we need to finagle the TPathInit links too?
+        //       - seems like no? but maybe save/load affects it?
         // link = Link.GetOne("TPathInit", elevator);
         // if (link) Link.Destroy(link);
         // Link.Create("TPathInit", elevator, atStopPt);
@@ -645,12 +671,13 @@ class PathElevatorController extends SqRootScript {
             links.append(link);
             pt = LinkDest(link);
         }
+        local minSpeed = 3.0;
         local maxSpeed = 20.0;
         local speedIncrement = 2.0;
         local count = links.len();
         local mid = count>>1;
         print("count = "+count+", mid = "+mid);
-        local speed = 5.0;
+        local speed = minSpeed;
         for (local i=0; i<=mid; i++) {
             local j = count-i-1;
             speed += speedIncrement;
@@ -685,8 +712,9 @@ class PathElevatorController extends SqRootScript {
         //       are taking.
         SetData("PathElevatorController.Stop", 0);
         SetData("PathElevatorController.Dest", toStop);
-        print("... asking for call from "+toStopPt);
-        SendMessage(toStopPt, "TurnOn");
+        // TODO: hey, we dont need a call, right? we can just start going?
+        Property.Set(elevator, "MovingTerrain" ,"Active", true);
+
         // And close all the doors.
         DoDoors(-1, false);
     }
