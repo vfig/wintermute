@@ -11,7 +11,6 @@
 // 4. CD link from the controller to the elevator.
 // 5. On each call button, door, and TerrPt, add the "Schema: Message"
 //    property, with its value being the floor number.
-// 6. Put the ElevatorReporter script on the elevator.
 //
 // Floor numbers can start at 0, or at 1, it is up to you.
 //
@@ -46,8 +45,7 @@ class ElevatorController extends SqRootScript {
         foreach (link in links) {
             local obj = LinkDest(link);
             if (! Object.HasMetaProperty(obj, meta)) {
-                if (Object.InheritsFrom(obj, "TerrPt")
-                || Object.InheritsFrom(obj, "Lift")) {
+                if (Object.InheritsFrom(obj, "Lift")) {
                     Object.AddMetaProperty(obj, meta);
                 }
             }
@@ -133,10 +131,10 @@ class ElevatorController extends SqRootScript {
         DoDoors(-1, false);
     }
 
-    function OnWaypointReached() {
+    function OnElevatorAtWaypoint() {
         Log(message().message+" from "+message().from);
         // Find out what floor we arrived at.
-        local waypt = message().from;
+        local waypt = message().data;
         local floor = Property.Get(waypt, "SchMsg").tointeger();
         Log("arrived at floor "+floor);
         SetData("ElevatorController.Floor", floor);
@@ -146,8 +144,16 @@ class ElevatorController extends SqRootScript {
 }
 
 class ElevatorReporter extends SqRootScript {
-    function OnWaypointReached() {
-        Link.BroadcastOnAllLinks(self, "WaypointReached", "~ControlDevice");
+    function OnMovingTerrainWaypoint() {
+        local waypt = message().waypoint;
+        local targets = [];
+        local links = Link.GetAll("~ControlDevice", self);
+        foreach (link in links) {
+            targets.append(LinkDest(link));
+        }
+        foreach (obj in targets) {
+            SendMessage(obj, "ElevatorAtWaypoint", waypt);
+        }
     }
 }
 
