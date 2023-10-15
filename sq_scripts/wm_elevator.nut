@@ -157,6 +157,9 @@ class ElevatorReporter extends SqRootScript {
     }
 }
 
+// -------------------------------------------
+// JUNK THIS
+/*
 class PathPoint extends SqRootScript {
     function OnTurnOn() {
         Log(message().message);
@@ -445,5 +448,287 @@ class Cthelevator extends SqRootScript {
     function LogError(message) {
         print("ERROR: PathElevator "+self+": "+message);
         Debug.Log("ERROR: PathElevator "+self+": "+message);
+    }
+}
+*/
+// END JUNK
+// --------------------------------------------
+
+class PathElevatorController extends SqRootScript {
+    function OnSim() {
+        if (message().starting) {
+            SetupReporters();
+            SetupInitialFloor();
+        }
+    }
+
+    function LogError(text) {
+        print("ERROR: PathElevatorController "+self+": "+text);
+    }
+
+    function Log(text) {
+        print("## PathElevatorController "+self+": "+text);
+    }
+
+    function SetupReporters() {
+        local metaName = "M-ElevatorReporter";
+        local meta = Object.Named(metaName);
+        if (meta==0) {
+            LogError("Cannot find "+metaName+" metaclass.");
+            return;
+        }
+        local elevator = GetElevator();
+        if (elevator==0) {
+            LogError("Cannot find elevator.");
+            return;
+        }
+        if (! Object.HasMetaProperty(elevator, meta)) {
+            Object.AddMetaProperty(elevator, meta);
+        }
+    }
+
+    function SetupInitialFloor() {
+        local elevator = GetElevator();
+        if (elevator==0) {
+            LogError("Cannot find elevator.");
+            return;
+        }
+        Log("found elevator "+elevator);
+        local link = Link.GetOne("TPathInit", elevator);
+        if (link==0) {
+            LogError("Cannot find elevator's TPathInit.");
+            return;
+        }
+        local initPt = LinkDest(link);
+        local stopPoints = GetStopPoints();
+        foreach (id, pt in stopPoints) {
+            if (pt==initPt) {
+                SetData("PathElevatorController.Stop", id);
+                Log("starting at stop "+id);
+            }
+        }
+        SetData("PathElevatorController.Dest", 0);
+    }
+
+    function GetElevator() {
+        local links = Link.GetAll("ControlDevice", self);
+        foreach (link in links) {
+            local obj = LinkDest(link);
+            if (Object.InheritsFrom(obj, "Lift")) {
+                return obj;
+            }
+        }
+        return 0;
+    }
+
+    function GetStopPointId(value) {
+        if (value.find("Forward")==0) {
+            return (value.slice(7).tointeger()+1);
+        } else if (value.find("Reverse")==0) {
+            return -(value.slice(7).tointeger()+1);
+        } else {
+            return 0;
+        }
+    }
+
+    function GetStopPoints() {
+        local stopPoints = {};
+        local links = Link.GetAll("ScriptParams", self);
+        foreach (link in links) {
+            local value = LinkTools.LinkGetData(link, "");
+            local id = GetStopPointId(value);
+            if (id==0) continue;
+            local pt = LinkDest(link);
+            stopPoints[id] <- pt;
+        }
+        return stopPoints;
+    }
+
+    function DoDoors(atFloor, open) {
+        // TODO: keep this, or not?
+        return;
+        local links = Link.GetAll("ControlDevice", self);
+        foreach (link in links) {
+            local obj = LinkDest(link);
+            if (Object.InheritsFrom(obj, "Door")
+            || Property.Possessed(obj, "RotDoor")
+            || Property.Possessed(obj, "TransDoor")) {
+                local floor = Property.Get(obj, "SchMsg").tointeger();
+                if (atFloor==-1 || atFloor==floor) {
+                    Log((open? "opening":"closing")+" door "+obj);
+                    SendMessage(obj, (open? "Open":"Close"));
+                }
+            }
+        }
+    }
+
+    function OnTurnOn() {
+        // BUG: some summonses are not working; the monolog seems to show that
+        //      the PathElevator script is trying to send the elevator to itself??
+        //
+        //      To:      0   1   2   3
+        //      From: 0  .   .   .   .
+        //            1  .   .   .   .
+        //            2  .   .   .   .
+        //            3  .   .   .   .
+        //
+        // TODO: test all variations and log them above.
+        // TODO: dump all links to/from the elevator for sanity checking the
+        //       failing summonses?
+        local elevator = GetElevator();
+        if (elevator==0) {
+            LogError("Cannot find elevator.");
+            return;
+        }
+        // Abort if we are in motion already.
+        local isMoving = Property.Get(elevator, "MovingTerrain", "Active");
+        if (isMoving) {
+            Log("Elevator is in motion; ignoring summons.");
+            return;
+        }
+        // TODO: better: abort if we are in motion and have passed one
+        //       waypoint already (so the player can "change their mind")
+        //       about the button they press?
+        Log(message().message+" from "+message().from);
+        // Find out what stop we should go to.
+        local button = message().from;
+        local toStop = (Property.Get(button, "SchMsg").tointeger()+1);
+        if (toStop<=0) {
+            LogError("Call button "+button+" has negative stop.");
+            return;
+        }
+        // See if we want to go there.
+        local atStop = abs(GetData("PathElevatorController.Stop"));
+        print("...at "+atStop+" to "+toStop);
+        if (toStop==atStop) {
+            Log("already at stop "+toStop);
+            return;
+        }
+        // Okay, go there.
+        Log("summon to stop "+toStop);
+        local stopPoints = GetStopPoints();
+        // Check if we need the reverse path.
+        if (toStop<atStop) {
+            toStop = -toStop;
+            atStop = -atStop;
+            print("...reverse path: at "+atStop+" to "+toStop);
+        }
+        local atStopPt = stopPoints[atStop];
+        local toStopPt = stopPoints[toStop];
+        // Fix up the elevator's path links, so it is on the correct path.
+        local link = Link.GetOne("TPath", atStopPt);
+        if (link==0) {
+            LogError("Stop point "+atStopPt+" has no outgoing TPath");
+            return;
+        }
+        local nextStopPt = LinkDest(link);
+        local link = Link.GetOne("TPathNext", elevator);
+        if (link) Link.Destroy(link);
+        Link.Create("TPathNext", elevator, nextStopPt);
+        print("... created TPathNext link to "+nextStopPt);
+        // TODO: do we need to finagle the TPathInit links too?
+        // link = Link.GetOne("TPathInit", elevator);
+        // if (link) Link.Destroy(link);
+        // Link.Create("TPathInit", elevator, atStopPt);
+        // print("... created TPathInit link to "+atStopPt);
+
+        // Set the speeds of all the links along the path, so we get the
+        // acceleration and deceleration that we want.
+        local links = [];
+        local pt = atStopPt;
+        while (pt!=toStopPt) {
+            link = Link.GetOne("TPath", pt);
+            if (link==0) {
+                LogError("Failed to find path from "+atStopPt+" to "+toStopPt);
+                return;
+            }
+            links.append(link);
+            pt = LinkDest(link);
+        }
+        local maxSpeed = 20.0;
+        local speedIncrement = 2.0;
+        local count = links.len();
+        local mid = count>>1;
+        print("count = "+count+", mid = "+mid);
+        local speed = 5.0;
+        for (local i=0; i<=mid; i++) {
+            local j = count-i-1;
+            speed += speedIncrement;
+            if (speed>maxSpeed) speed = maxSpeed;
+            if (i==mid && (count&1)==0) break;
+            // Set accelerating link
+            link = links[i];
+            LinkTools.LinkSetData(link, "Speed", speed);
+            LinkTools.LinkSetData(link, "Pause (ms)", 0);
+            LinkTools.LinkSetData(link, "Path Limit?", false);
+            print("**** set link "+i+" speed to "+speed);
+            if (i==mid) break;
+            // Set decelarating link
+            link = links[j];
+            LinkTools.LinkSetData(link, "Speed", speed);
+            LinkTools.LinkSetData(link, "Pause (ms)", 0);
+            LinkTools.LinkSetData(link, "Path Limit?", false);
+            print("**** set link "+j+" speed to "+speed);
+        }
+        // The destination point needs to stop the elevator entirely.
+        link = Link.GetOne("TPath", toStopPt);
+        if (link==0) {
+            LogError("No outgoing TPath link from "+toStopPt);
+            return;
+        }
+        LinkTools.LinkSetData(link, "Speed", 0.0);
+        LinkTools.LinkSetData(link, "Pause (ms)", 0);
+        LinkTools.LinkSetData(link, "Path Limit?", true);
+
+        // TODO: adjust all TPath links from stops
+        //       to set speeds according to the path we
+        //       are taking.
+        SetData("PathElevatorController.Stop", 0);
+        SetData("PathElevatorController.Dest", toStop);
+        print("... asking for call from "+toStopPt);
+        SendMessage(toStopPt, "TurnOn");
+        // And close all the doors.
+        DoDoors(-1, false);
+    }
+
+    function OnElevatorAtWaypoint() {
+        Log(message().message+" from "+message().from);
+        local elevator = GetElevator();
+        if (elevator==0) {
+            LogError("Cannot find elevator.");
+            return;
+        }
+        local waypt = message().data;
+        // Set our rotate tweq to turn towards the direction
+        // of movement.
+
+
+        // Find out if we arrived at a stop.
+        //local floor = Property.Get(waypt, "SchMsg").tointeger();
+        local link = Link.GetOne("~ScriptParams", waypt);
+        if (link==0) {
+            Log("boring point "+waypt);
+            return;
+        }
+        local value = LinkTools.LinkGetData(link, "");
+        local stop = GetStopPointId(value);
+        // Is this our destination stop?
+        local toStop = GetData("PathElevatorController.Dest");
+        if (stop==toStop) {
+            Log("arrived at stop "+stop);
+            SetData("PathElevatorController.Stop", stop);
+            SetData("PathElevatorController.Dest", 0);
+            Property.Set(elevator, "MovingTerrain", "Active", false);
+            // Open the doors at this floor.
+            DoDoors(floor, true);
+        } else {
+            Log("passing stop "+stop);
+        }
+    }
+}
+
+class DumpMessages extends SqRootScript {
+    function OnMessage() {
+        print("<< "+self+" got "+message().message+" from "+message().from+" >>");
     }
 }
