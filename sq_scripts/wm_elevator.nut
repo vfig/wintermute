@@ -150,3 +150,294 @@ class ElevatorReporter extends SqRootScript {
         Link.BroadcastOnAllLinks(self, "WaypointReached", "~ControlDevice");
     }
 }
+
+class PathPoint extends SqRootScript {
+    function OnTurnOn() {
+        Log(message().message);
+        local elevator = FindElevator();
+        if (elevator) {
+            SendMessage(elevator, "Call");
+        }
+    }
+
+    function FindElevator() {
+        // Trace alternately forward and backward to find the nearest elevator.
+        local forwardPt = self;
+        local reversePt = self;
+        local link = 0;
+        local safety = 0;
+        while (forwardPt && reversePt) {
+            if (forwardPt) {
+                link = Link.GetOne("~TPathNext", forwardPt);
+                if (link) break;
+                link = Link.GetOne("~TPathInit", forwardPt);
+                if (link) break;
+                forwardPt = LinkDest(Link.GetOne("TPath", forwardPt));
+            }
+            if (reversePt) {
+                link = Link.GetOne("~TPathNext", reversePt);
+                if (link) break;
+                link = Link.GetOne("~TPathInit", reversePt);
+                if (link) break;
+                reversePt = LinkDest(Link.GetOne("~TPath", reversePt));
+            }
+            safety++;
+            if (safety>1000) {
+                Log("SAFETY DANCE");
+                return 0;
+            }
+        }
+        if (link) {
+            local elevator = LinkDest(link);
+            Log("found Elevator "+elevator);
+            return elevator;
+        }
+        Log("found no elevator.");
+        return 0;
+    }
+
+    function Log(message) {
+        print("PathPoint "+self+": "+message);
+        Debug.Log("PathElevator "+self+": "+message);
+    }
+}
+
+class Cthelevator extends SqRootScript {
+    m_path = null;
+
+    function OnSim() {
+        Log(message().message);
+        if (message().starting) {
+            InitElevator();
+        }
+    }
+
+    function OnDarkGameModeChange() {
+        Log(message().message);
+        if (message().resuming) {
+            // TODO: do we need to start moving again?
+        } else if (message().suspending) {
+            // Do nothing
+        } else {
+            // Neither suspending nor resuming? Do we need to do anything?
+        }
+    }
+
+    function OnMovingTerrainWaypoint() {
+        Log(message().message);
+        local waypoint = message().waypoint;
+    }
+
+    function OnMessage() {
+        Log(message().message);
+    }
+
+    // TODO: we are gonna need a custom TerrPt script, that will search both
+    //       directions along the TPath links to find the elevator to call.
+    function OnCall() {
+        Log(message().message);
+        local dest = message().from;
+        local at = AtPoint();
+        Log("at "+at);
+        local result = FindPathToPoint(at, dest);
+        if (result==null) {
+            LogError("Cannot find path to point "+dest)
+        } else {
+            local forward = result[0];
+            local path = result[1];
+            Log("path to point "+dest+":")
+            for (local i=0; i<path.len(); i++) {
+                local pt = path[i];
+                Log("  "+pt+" "+Object.Position(pt));
+            }
+            // TODO: deal with the cases:
+            //   1. dest==at, and we are nearby
+            //   2. dest==at, but we are some distance from it (might not be forward!)
+            //   3. other edge cases?
+            SetDestPoint(dest);
+            SetForward(forward);
+            SetMoving(true);
+            UpdateElevator(true);
+        }
+    }
+
+    function InitElevator() {
+        // Find the point we begin at.
+        local link = Link.GetOne("TPathInit", self);
+        if (! link) {
+            LogError("has no TPathInit link and will not run.");
+            Object.Destroy(self);
+            return;
+        }
+        local pt = LinkDest(link);
+        SetAtPoint(pt);
+        SetForward(true);
+        SetMoving(false);
+    }
+
+    function UpdateElevator(resetNext) {
+        local forward = IsForward();
+        local at = AtPoint();
+        local dest = DestPoint();
+        local next = 0;
+        if (resetNext) {
+            if (forward) {
+                next = LinkDest(Link.GetOne("TPath", at));
+            } else {
+                next = LinkDest(Link.GetOne("~TPath", at));
+            }
+            local link = Link.GetOne("TPathNext", self);
+            if (link) Link.Destroy(link);
+            if (next) Link.Create("TPathNext", self, next);
+        } else {
+            next = LinkDest(Link.GetOne("TPathNext", self));
+        }
+        // If there is no next point, something has gone wrong, and we
+        // should stop.
+        if (! next) {
+            local zero = vector();
+            Physics.ControlVelocity(self, zero);
+            Physics.SetVelocity(self, zero);
+            SetMoving(false);
+            LogError("has no TPathNext link. Stopping.");
+            return;
+        }
+        // Are we at the next point yet?
+        local pos = Object.Position(self);
+        local nextPos = Object.Position(next);
+        local dist = (nextPos-pos).Length();
+        // TODO: figure out how far we will move in the next elevator tick
+        //       (i am thinking like 1/4 sec) and if we expect to hit the
+        //       next point or not. 
+        if (dist<0.5) {
+            // We are basically here.
+            // TODO: handle moving down the chain
+            local zero = vector();
+            Physics.ControlVelocity(self, zero);
+            Physics.SetVelocity(self, zero);
+            SetMoving(false);
+            Log("TODO: handle moving down the chain");
+            return;
+        } else {
+            local dir = (nextPos-pos).GetNormalized();
+            local speed = 5.0; // TODO: handle speed
+            local vel = dir*speed;
+            Physics.ControlVelocity(self, vel);
+            // TODO: face the direction too.
+        }
+        // TODO: set a timer to update again.
+        // UpdateElevator();
+    }
+
+    function AtPointLink() {
+        foreach (link in Link.GetAll("ScriptParams", self)) {
+            local value = LinkTools.LinkGetData(link, "");
+            if (value=="PathElevAt") {
+                return link;
+            }
+        }
+    }
+
+    function DestPointLink() {
+        foreach (link in Link.GetAll("ScriptParams", self)) {
+            local value = LinkTools.LinkGetData(link, "");
+            if (value=="PathElevDest") {
+                return link;
+            }
+        }
+    }
+
+    function SetAtPoint(pt) {
+        local link = AtPointLink();
+        if (link) Link.Destroy(link);
+        link = Link.Create("ScriptParams", self, pt);
+        LinkTools.LinkSetData(link, "", "PathElevAt");
+    }
+
+    function SetDestPoint(pt) {
+        local link = DestPointLink();
+        if (link) Link.Destroy(link);
+        link = Link.Create("ScriptParams", self, pt);
+        LinkTools.LinkSetData(link, "", "PathElevDest");
+    }
+
+    function AtPoint() {
+        return LinkDest(AtPointLink());
+    }
+
+    function DestPoint() {
+        return LinkDest(DestPointLink());
+    }
+
+    function IsMoving() {
+        return GetData("Moving");
+    }
+
+    function IsForward() {
+        return GetData("Forward");
+    }
+
+    function SetMoving(moving) {
+        SetData("Moving", (moving==true));
+    }
+
+    function SetForward(forward) {
+        SetData("Forward", (forward==true));
+    }
+
+
+    function FindPathToPoint(start, dest) {
+        if (! start || ! dest) return null;
+        local path = [];
+        // Trace forward from the start to try to find the dest.
+        local pt = start;
+        local link = 0;
+        local found = false;
+        while (true) {
+            path.append(pt);
+            if (pt==dest) {
+                found = true;
+                break;
+            }
+            link = Link.GetOne("TPath", pt);
+            if (link==0) break;
+            if (LinkDest(link)==start) break;
+            pt = LinkDest(link);
+        }
+        if (found) {
+            Log("found Forward path from "+start+" to "+dest);
+            return [true, path];
+        }
+        // Not trace backward from the start, maybe the dest is that way.
+        path = [];
+        pt = start;
+        found = false;
+        while (true) {
+            path.append(pt);
+            if (pt==dest) {
+                found = true;
+                break;
+            }
+            link = Link.GetOne("~TPath", pt);
+            if (link==0) break;
+            if (LinkDest(link)==start) break;
+            pt = LinkDest(link);
+        }
+        if (found) {
+            Log("found Reverse path from "+start+" to "+dest);
+            return [false, path];
+        }
+        Log("found no path from "+start+" to "+dest);
+        return null;
+    }
+
+    function Log(message) {
+        print("PathElevator "+self+": "+message);
+        Debug.Log("PathElevator "+self+": "+message);
+    }
+
+    function LogError(message) {
+        print("ERROR: PathElevator "+self+": "+message);
+        Debug.Log("ERROR: PathElevator "+self+": "+message);
+    }
+}
