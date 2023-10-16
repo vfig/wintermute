@@ -196,7 +196,7 @@ class ElevatorController extends SqRootScript {
 class PathElevatorController extends SqRootScript {
     function OnSim() {
         if (message().starting) {
-            SetupInitialFloor();
+            Setup();
         }
     }
 
@@ -208,7 +208,7 @@ class PathElevatorController extends SqRootScript {
         print("## PathElevatorController "+self+": "+text);
     }
 
-    function SetupInitialFloor() {
+    function Setup() {
         local elevator = GetElevator();
         if (elevator==0) {
             LogError("Cannot find elevator.");
@@ -222,24 +222,31 @@ class PathElevatorController extends SqRootScript {
         }
         local initPt = LinkDest(link);
         local stopPoints = GetStopPoints();
+        local atStop = 0;
         foreach (id, pt in stopPoints) {
             if (pt==initPt) {
-                SetData("PathElevatorController.Stop", id);
-                Log("starting at stop "+id);
+                atStop = abs(id);
+                break;
             }
         }
-        if (GetData("PathElevatorController.Stop")==null) {
+        if (atStop==0) {
             LogError("Cannot identify elevator's starting stop.");
             return;
         }
+        Log("starting at stop "+atStop);
+        SetData("PathElevatorController.Stop", atStop);
         SetData("PathElevatorController.Dest", 0);
+        DoDoors(0, false);
+        DoDoors(atStop, true);
+        DoGizmos(0, false);
+        DoGizmos(atStop, true);
     }
 
     function GetElevator() {
         local links = Link.GetAll("ControlDevice", self);
         foreach (link in links) {
             local obj = LinkDest(link);
-            if (Object.InheritsFrom(obj, "Lift")) {
+            if (ObjIsElevator(obj)) {
                 return obj;
             }
         }
@@ -256,8 +263,7 @@ class PathElevatorController extends SqRootScript {
         local links = Link.GetAll("ControlDevice", self);
         foreach (link in links) {
             local pt = LinkDest(link);
-            if (Object.InheritsFrom(pt, "TerrPt")
-            || Object.InheritsFrom(pt, "PathPt")) {
+            if (ObjIsPathPt(pt)) {
                 local id = GetStopPointId(pt);
                 if (id==0) continue;
                 stopPoints[id] <- pt;
@@ -266,19 +272,51 @@ class PathElevatorController extends SqRootScript {
         return stopPoints;
     }
 
-    function DoDoors(atFloor, open) {
-        // TODO: keep this, or not?
-        return;
+    function ObjIsElevator(obj) {
+        return (Object.InheritsFrom(obj, "Lift")
+            || Property.Possessed(obj, "MovingTerrain"));
+    }
+
+    function ObjIsPathPt(obj) {
+        return (Object.InheritsFrom(obj, "TerrPt")
+            || Object.InheritsFrom(obj, "PathPt"));
+    }
+
+    function ObjIsDoor(obj) {
+        return (Object.InheritsFrom(obj, "Door")
+            || Property.Possessed(obj, "RotDoor")
+            || Property.Possessed(obj, "TransDoor"));
+    }
+
+    function ObjIsGizmo(obj) {
+        return (! ObjIsElevator(obj)
+            && ! ObjIsPathPt(obj)
+            && ! ObjIsDoor(obj));
+    }
+
+    function DoDoors(atStop, open) {
         local links = Link.GetAll("ControlDevice", self);
         foreach (link in links) {
             local obj = LinkDest(link);
-            if (Object.InheritsFrom(obj, "Door")
-            || Property.Possessed(obj, "RotDoor")
-            || Property.Possessed(obj, "TransDoor")) {
-                local floor = Property.Get(obj, "SchMsg").tointeger();
-                if (atFloor==-1 || atFloor==floor) {
+            if (ObjIsDoor(obj)) {
+                local stop = Property.Get(obj, "SchMsg").tointeger();
+                if (atStop==0 || atStop==stop) {
                     Log((open? "opening":"closing")+" door "+obj);
                     SendMessage(obj, (open? "Open":"Close"));
+                }
+            }
+        }
+    }
+
+    function DoGizmos(atStop, turnOn) {
+        local links = Link.GetAll("ControlDevice", self);
+        foreach (link in links) {
+            local obj = LinkDest(link);
+            if (ObjIsGizmo(obj)) {
+                local stop = Property.Get(obj, "SchMsg").tointeger();
+                if (atStop==0 || atStop==stop) {
+                    Log((turnOn? "turning on":"turning off")+" gizmo "+obj);
+                    SendMessage(obj, (turnOn? "TurnOn":"TurnOff"));
                 }
             }
         }
@@ -397,9 +435,9 @@ class PathElevatorController extends SqRootScript {
         SetData("PathElevatorController.Stop", 0);
         SetData("PathElevatorController.Dest", toStop);
         Property.Set(elevator, "MovingTerrain" ,"Active", true);
-        // TODO: doors?
         // And close all the doors.
-        DoDoors(-1, false);
+        DoDoors(0, false);
+        DoGizmos(0, false);
     }
 
     function OnElevatorAtWaypoint() {
@@ -427,7 +465,8 @@ class PathElevatorController extends SqRootScript {
             SetData("PathElevatorController.Dest", 0);
             Property.Set(elevator, "MovingTerrain", "Active", false);
             // Open the doors at this floor.
-            DoDoors(floor, true);
+            DoDoors(abs(stop), true);
+            DoGizmos(abs(stop), true);
         } else {
             Log("passing stop "+stop);
         }

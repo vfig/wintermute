@@ -81,3 +81,16 @@ class DoorJointsFirst extends SqRootScript
         Property.Set(self, "StTweqJoints", "AnimS", flags);
     }
 }
+
+// Not technically a door, but if we want to toggle hitboxes...
+class ToggleRefs extends SqRootScript {
+    function OnTurnOn() {
+        SetProperty("HasRefs", true);
+        SetProperty("CollisionType", 1);
+    }
+
+    function OnTurnOff() {
+        SetProperty("HasRefs", false);
+        SetProperty("CollisionType", 0);
+    }
+}
