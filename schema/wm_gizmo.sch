@@ -42,3 +42,10 @@ archetype DEVICE_MISC
 volume -1000
 lvrotat2
 env_tag (Event Deactivate) (DeviceType LockingBarCrank)
+
+// Electrified rail
+schema wm_elecrail
+archetype DEVICE_MISC
+mono_loop 0 0
+volume -2000
+arcs
