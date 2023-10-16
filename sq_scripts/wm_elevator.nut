@@ -1,16 +1,21 @@
 // Fancy Elevator Controller
 // -------------------------
 //
+// Controls an elevator with multiple floors and integrated doors/gates.
+//
 // Setup:
 //
 // 1. Add a fnord, and give it the ElevatorController script. This
 //    is the controller.
-// 1. For each call button, CD link from it to the controller.
-// 2. CD link from the controller to each TerrPt.
-// 3. CD link from the controller to each door.
-// 4. CD link from the controller to the elevator.
-// 5. On each call button, door, and TerrPt, add the "Schema: Message"
-//    property, with its value being the floor number.
+// 2. CD link from the controller to the elevator. Add the "ControlledElevator"
+//    script to the elevator.
+// 3. CD link each call button to the controller. Add the "Schema>Message"
+//    property to the button, with the floor number
+//    that it calls the elevator to.
+// 4. CD link from the controller to each TerrPt. Add the "Schema>Message"
+//    property to the TerrPt, with the floor number that this TerrPt is at.
+// 5. CD link from the controller to each door. Add the "Schema>Message"
+//    property to the door, with the floor number that this door is at.
 //
 // Floor numbers can start at 0, or at 1, it is up to you.
 //
@@ -18,10 +23,13 @@
 // or down should have "Schema: Message" set to the floor number it
 // will send the elevator to, NOT the floor number the button is at.
 //
+// Note also that you must NOT create CD links to individual TerrPts, as with
+// the stock elevators; instead, all the links go to or from the
+// ElevatorController, so that it can coordinate all the behaviour.
+//
 class ElevatorController extends SqRootScript {
     function OnSim() {
         if (message().starting) {
-            SetupReporters();
             SetupInitialFloor();
         }
     }
@@ -32,24 +40,6 @@ class ElevatorController extends SqRootScript {
 
     function Log(text) {
         print("# ElevatorController "+self+": "+text);
-    }
-
-    function SetupReporters() {
-        local metaName = "M-ElevatorReporter";
-        local meta = Object.Named(metaName);
-        if (meta==0) {
-            LogError("Cannot find "+metaName+" metaclass.");
-            return;
-        }
-        local links = Link.GetAll("ControlDevice", self);
-        foreach (link in links) {
-            local obj = LinkDest(link);
-            if (! Object.HasMetaProperty(obj, meta)) {
-                if (Object.InheritsFrom(obj, "Lift")) {
-                    Object.AddMetaProperty(obj, meta);
-                }
-            }
-        }
     }
 
     function SetupInitialFloor() {
@@ -143,321 +133,69 @@ class ElevatorController extends SqRootScript {
     }
 }
 
-class ElevatorReporter extends SqRootScript {
-    function OnMovingTerrainWaypoint() {
-        local waypt = message().waypoint;
-        local targets = [];
-        local links = Link.GetAll("~ControlDevice", self);
-        foreach (link in links) {
-            targets.append(LinkDest(link));
-        }
-        foreach (obj in targets) {
-            SendMessage(obj, "ElevatorAtWaypoint", waypt);
-        }
-    }
-}
-
-// -------------------------------------------
-// JUNK THIS
-/*
-class PathPoint extends SqRootScript {
-    function OnTurnOn() {
-        Log(message().message);
-        local elevator = FindElevator();
-        if (elevator) {
-            SendMessage(elevator, "Call");
-        }
-    }
-
-    function FindElevator() {
-        // Trace alternately forward and backward to find the nearest elevator.
-        local forwardPt = self;
-        local reversePt = self;
-        local link = 0;
-        local safety = 0;
-        while (forwardPt && reversePt) {
-            if (forwardPt) {
-                link = Link.GetOne("~TPathNext", forwardPt);
-                if (link) break;
-                link = Link.GetOne("~TPathInit", forwardPt);
-                if (link) break;
-                forwardPt = LinkDest(Link.GetOne("TPath", forwardPt));
-            }
-            if (reversePt) {
-                link = Link.GetOne("~TPathNext", reversePt);
-                if (link) break;
-                link = Link.GetOne("~TPathInit", reversePt);
-                if (link) break;
-                reversePt = LinkDest(Link.GetOne("~TPath", reversePt));
-            }
-            safety++;
-            if (safety>1000) {
-                Log("SAFETY DANCE");
-                return 0;
-            }
-        }
-        if (link) {
-            local elevator = LinkDest(link);
-            Log("found Elevator "+elevator);
-            return elevator;
-        }
-        Log("found no elevator.");
-        return 0;
-    }
-
-    function Log(message) {
-        print("PathPoint "+self+": "+message);
-        Debug.Log("PathElevator "+self+": "+message);
-    }
-}
-
-class Cthelevator extends SqRootScript {
-    m_path = null;
-
-    function OnSim() {
-        Log(message().message);
-        if (message().starting) {
-            InitElevator();
-        }
-    }
-
-    function OnDarkGameModeChange() {
-        Log(message().message);
-        if (message().resuming) {
-            // TODO: do we need to start moving again?
-        } else if (message().suspending) {
-            // Do nothing
-        } else {
-            // Neither suspending nor resuming? Do we need to do anything?
-        }
-    }
-
-    function OnMovingTerrainWaypoint() {
-        Log(message().message);
-        local waypoint = message().waypoint;
-    }
-
-    function OnMessage() {
-        Log(message().message);
-    }
-
-    // TODO: we are gonna need a custom TerrPt script, that will search both
-    //       directions along the TPath links to find the elevator to call.
-    function OnCall() {
-        Log(message().message);
-        local dest = message().from;
-        local at = AtPoint();
-        Log("at "+at);
-        local result = FindPathToPoint(at, dest);
-        if (result==null) {
-            LogError("Cannot find path to point "+dest)
-        } else {
-            local forward = result[0];
-            local path = result[1];
-            Log("path to point "+dest+":")
-            for (local i=0; i<path.len(); i++) {
-                local pt = path[i];
-                Log("  "+pt+" "+Object.Position(pt));
-            }
-            // TODO: deal with the cases:
-            //   1. dest==at, and we are nearby
-            //   2. dest==at, but we are some distance from it (might not be forward!)
-            //   3. other edge cases?
-            SetDestPoint(dest);
-            SetForward(forward);
-            SetMoving(true);
-            UpdateElevator(true);
-        }
-    }
-
-    function InitElevator() {
-        // Find the point we begin at.
-        local link = Link.GetOne("TPathInit", self);
-        if (! link) {
-            LogError("has no TPathInit link and will not run.");
-            Object.Destroy(self);
-            return;
-        }
-        local pt = LinkDest(link);
-        SetAtPoint(pt);
-        SetForward(true);
-        SetMoving(false);
-    }
-
-    function UpdateElevator(resetNext) {
-        local forward = IsForward();
-        local at = AtPoint();
-        local dest = DestPoint();
-        local next = 0;
-        if (resetNext) {
-            if (forward) {
-                next = LinkDest(Link.GetOne("TPath", at));
-            } else {
-                next = LinkDest(Link.GetOne("~TPath", at));
-            }
-            local link = Link.GetOne("TPathNext", self);
-            if (link) Link.Destroy(link);
-            if (next) Link.Create("TPathNext", self, next);
-        } else {
-            next = LinkDest(Link.GetOne("TPathNext", self));
-        }
-        // If there is no next point, something has gone wrong, and we
-        // should stop.
-        if (! next) {
-            local zero = vector();
-            Physics.ControlVelocity(self, zero);
-            Physics.SetVelocity(self, zero);
-            SetMoving(false);
-            LogError("has no TPathNext link. Stopping.");
-            return;
-        }
-        // Are we at the next point yet?
-        local pos = Object.Position(self);
-        local nextPos = Object.Position(next);
-        local dist = (nextPos-pos).Length();
-        // TODO: figure out how far we will move in the next elevator tick
-        //       (i am thinking like 1/4 sec) and if we expect to hit the
-        //       next point or not. 
-        if (dist<0.5) {
-            // We are basically here.
-            // TODO: handle moving down the chain
-            local zero = vector();
-            Physics.ControlVelocity(self, zero);
-            Physics.SetVelocity(self, zero);
-            SetMoving(false);
-            Log("TODO: handle moving down the chain");
-            return;
-        } else {
-            local dir = (nextPos-pos).GetNormalized();
-            local speed = 5.0; // TODO: handle speed
-            local vel = dir*speed;
-            Physics.ControlVelocity(self, vel);
-            // TODO: face the direction too.
-        }
-        // TODO: set a timer to update again.
-        // UpdateElevator();
-    }
-
-    function AtPointLink() {
-        foreach (link in Link.GetAll("ScriptParams", self)) {
-            local value = LinkTools.LinkGetData(link, "");
-            if (value=="PathElevAt") {
-                return link;
-            }
-        }
-    }
-
-    function DestPointLink() {
-        foreach (link in Link.GetAll("ScriptParams", self)) {
-            local value = LinkTools.LinkGetData(link, "");
-            if (value=="PathElevDest") {
-                return link;
-            }
-        }
-    }
-
-    function SetAtPoint(pt) {
-        local link = AtPointLink();
-        if (link) Link.Destroy(link);
-        link = Link.Create("ScriptParams", self, pt);
-        LinkTools.LinkSetData(link, "", "PathElevAt");
-    }
-
-    function SetDestPoint(pt) {
-        local link = DestPointLink();
-        if (link) Link.Destroy(link);
-        link = Link.Create("ScriptParams", self, pt);
-        LinkTools.LinkSetData(link, "", "PathElevDest");
-    }
-
-    function AtPoint() {
-        return LinkDest(AtPointLink());
-    }
-
-    function DestPoint() {
-        return LinkDest(DestPointLink());
-    }
-
-    function IsMoving() {
-        return GetData("Moving");
-    }
-
-    function IsForward() {
-        return GetData("Forward");
-    }
-
-    function SetMoving(moving) {
-        SetData("Moving", (moving==true));
-    }
-
-    function SetForward(forward) {
-        SetData("Forward", (forward==true));
-    }
-
-
-    function FindPathToPoint(start, dest) {
-        if (! start || ! dest) return null;
-        local path = [];
-        // Trace forward from the start to try to find the dest.
-        local pt = start;
-        local link = 0;
-        local found = false;
-        while (true) {
-            path.append(pt);
-            if (pt==dest) {
-                found = true;
-                break;
-            }
-            link = Link.GetOne("TPath", pt);
-            if (link==0) break;
-            if (LinkDest(link)==start) break;
-            pt = LinkDest(link);
-        }
-        if (found) {
-            Log("found Forward path from "+start+" to "+dest);
-            return [true, path];
-        }
-        // Not trace backward from the start, maybe the dest is that way.
-        path = [];
-        pt = start;
-        found = false;
-        while (true) {
-            path.append(pt);
-            if (pt==dest) {
-                found = true;
-                break;
-            }
-            link = Link.GetOne("~TPath", pt);
-            if (link==0) break;
-            if (LinkDest(link)==start) break;
-            pt = LinkDest(link);
-        }
-        if (found) {
-            Log("found Reverse path from "+start+" to "+dest);
-            return [false, path];
-        }
-        Log("found no path from "+start+" to "+dest);
-        return null;
-    }
-
-    function Log(message) {
-        print("PathElevator "+self+": "+message);
-        Debug.Log("PathElevator "+self+": "+message);
-    }
-
-    function LogError(message) {
-        print("ERROR: PathElevator "+self+": "+message);
-        Debug.Log("ERROR: PathElevator "+self+": "+message);
-    }
-}
-*/
-// END JUNK
-// --------------------------------------------
+// Path Elevator Controller
+// -------------------------
+//
+// Controls a multi-stop variable-speed bidirectional elevator (horizontal
+// or vertical).
+//
+// Setup:
+//
+// 1. Create the "forward" chain of points, of TerrPt or PathPt objects
+//    (see note below). For best results, the points should be pretty evenly
+//    spaced along the entire path. Link each point to the next with a TPath
+//    link; you do not need to set the Speed or other fields of the link. Add
+//    one more dummy point at the end of the chain, in order that the last real
+//    point also has an outgoing TPath link. It is important that you do NOT
+//    link the points in a loop, as you would for a stock elevator.
+//
+// 2. On the points where the elevator should stop, add the "Schema>Message"
+//    property with the stop number; stops must be numbered starting from
+//    1 nearest the start of the forward chain and increasing along the chain.
+//
+// 3. Create the "reverse" chain of points, by duplicating all the points from
+//    the forward chain. Link each point to the one before it with a TPath link,
+//    so that the reverse chain links go in the opposite direction from the
+//    forward chain links. Add one more dummy point at the end of the chain,
+//    in order that the last real point also has an outgoing TPath link.
+//
+// 4. On the reverse points where the elevator should stop, add the
+//    "Schema>Message" property with the NEGATIVE stop number.
+//
+// 5. Sanity check: you should have points set up similar to this diagram:
+//
+//    Forward:       o -> o -> o -> o -> o -> o -> o -> o
+//    'Message'      1              2              3
+//
+//    Reverse:  o <- o <- o <- o <- o <- o <- o <- o
+//    'Message'     -1             -2             -3
+//
+// 6. Add a fnord, and give it the PathElevatorController script. This
+//    is the controller.
+// 7. CD link from the controller to the elevator. Add the "ControlledElevator"
+//    script to the elevator.
+// 8. CD link each call button to the controller. Add the "Schema>Message"
+//    property to the button, with the stop number that it calls the elevator
+//    to. This stop number should always be positive.
+// 9. CD link from the controller to each point on both the forward and reverse
+//    chains where the elevator should stop. These are the same points that you
+//    added the "Schema>Message" property to in steps 2 and 4.
+// 10. XXXXXXX TODO: CD link from the controller to each door. Add the "Schema>Message"
+//    property to the door, with the floor number that this door is at.
+//
+// Note that while you can use TerrPt for the path points, this script
+// does not depend on their StdTerrpoint script. In my mission, I created a
+// separate PathPt archetype (child of Marker) with no scripts that I used
+// for the path; this script will work with either TerrPt or PathPt objects.
+//
+// Note also that you must NOT create CD links to individual path points, as
+// with the stock elevators; instead, all the links go to or from the
+// PathElevatorController, so that it can coordinate all the behaviour.
+//
 
 class PathElevatorController extends SqRootScript {
     function OnSim() {
         if (message().starting) {
-            SetupReporters();
             SetupInitialFloor();
         }
     }
@@ -468,23 +206,6 @@ class PathElevatorController extends SqRootScript {
 
     function Log(text) {
         print("## PathElevatorController "+self+": "+text);
-    }
-
-    function SetupReporters() {
-        local metaName = "M-ElevatorReporter";
-        local meta = Object.Named(metaName);
-        if (meta==0) {
-            LogError("Cannot find "+metaName+" metaclass.");
-            return;
-        }
-        local elevator = GetElevator();
-        if (elevator==0) {
-            LogError("Cannot find elevator.");
-            return;
-        }
-        if (! Object.HasMetaProperty(elevator, meta)) {
-            Object.AddMetaProperty(elevator, meta);
-        }
     }
 
     function SetupInitialFloor() {
@@ -507,6 +228,10 @@ class PathElevatorController extends SqRootScript {
                 Log("starting at stop "+id);
             }
         }
+        if (GetData("PathElevatorController.Stop")==null) {
+            LogError("Cannot identify elevator's starting stop.");
+            return;
+        }
         SetData("PathElevatorController.Dest", 0);
     }
 
@@ -521,25 +246,22 @@ class PathElevatorController extends SqRootScript {
         return 0;
     }
 
-    function GetStopPointId(value) {
-        if (value.find("Forward")==0) {
-            return (value.slice(7).tointeger()+1);
-        } else if (value.find("Reverse")==0) {
-            return -(value.slice(7).tointeger()+1);
-        } else {
-            return 0;
-        }
+    function GetStopPointId(obj) {
+        if (! Property.Possessed(obj, "SchMsg")) return 0;
+        return Property.Get(obj, "SchMsg").tointeger();
     }
 
     function GetStopPoints() {
         local stopPoints = {};
-        local links = Link.GetAll("ScriptParams", self);
+        local links = Link.GetAll("ControlDevice", self);
         foreach (link in links) {
-            local value = LinkTools.LinkGetData(link, "");
-            local id = GetStopPointId(value);
-            if (id==0) continue;
             local pt = LinkDest(link);
-            stopPoints[id] <- pt;
+            if (Object.InheritsFrom(pt, "TerrPt")
+            || Object.InheritsFrom(pt, "PathPt")) {
+                local id = GetStopPointId(pt);
+                if (id==0) continue;
+                stopPoints[id] <- pt;
+            }
         }
         return stopPoints;
     }
@@ -563,43 +285,6 @@ class PathElevatorController extends SqRootScript {
     }
 
     function OnTurnOn() {
-        // BUG: some summonses are not working; the monolog seems to show that
-        //      the PathElevator script is trying to send the elevator to itself??
-        //
-        //      To:      0   1   2   3
-        //      From: 0  .   .   .   .
-        //            1  .   .   .   .
-        //            2  .   .   .   .
-        //            3  .   .   .   .
-        //
-        // TODO: test all variations and log them above.
-        // TODO: dump all links to/from the elevator for sanity checking the
-        //       failing summonses?
-
-/*
-        print("======================================")
-        local sl = sLink();
-        foreach (l in Link.GetAll("TPath")) {
-            sl.LinkGet(l);
-            print("TPath "
-                +Object.GetName(Object.Archetype(sl.source))+" "+sl.source
-                +" -> "+Object.GetName(Object.Archetype(sl.dest))+" "+sl.dest);
-        }
-        foreach (l in Link.GetAll("TPathInit")) {
-            sl.LinkGet(l);
-            print("TPathInit "
-                +Object.GetName(Object.Archetype(sl.source))+" "+sl.source
-                +" -> "+Object.GetName(Object.Archetype(sl.dest))+" "+sl.dest);
-        }
-        foreach (l in Link.GetAll("TPathNext")) {
-            sl.LinkGet(l);
-            print("TPathNext "
-                +Object.GetName(Object.Archetype(sl.source))+" "+sl.source
-                +" -> "+Object.GetName(Object.Archetype(sl.dest))+" "+sl.dest);
-        }
-        print(". . . . . . . . . . . . . . . . . . . ")
-*/
-
         local elevator = GetElevator();
         if (elevator==0) {
             LogError("Cannot find elevator.");
@@ -611,16 +296,18 @@ class PathElevatorController extends SqRootScript {
             Log("Elevator is in motion; ignoring summons.");
             return;
         }
+        // TODO: check the saved "at stop", and abort if it is zero (we may not
+        //       be in motion, but we plan to be, waiting for doors or something).
         // TODO: better: abort if we are in motion and have passed one
         //       waypoint already (so the player can "change their mind")
         //       about the button they press?
         Log(message().message+" from "+message().from);
         // Find out what stop we should go to.
         local button = message().from;
-        local toStop = (Property.Get(button, "SchMsg").tointeger()+1);
+        local toStop = Property.Get(button, "SchMsg").tointeger();
         if (toStop<=0) {
-            LogError("Call button "+button+" has negative stop.");
-            return;
+            Log("Warning: call button "+button+" has negative stop. You ought to fix this.");
+            toStop = abs(toStop);
         }
         // See if we want to go there.
         local atStop = abs(GetData("PathElevatorController.Stop"));
@@ -690,7 +377,7 @@ class PathElevatorController extends SqRootScript {
             LinkTools.LinkSetData(link, "Path Limit?", false);
             print("**** set link "+i+" speed to "+speed);
             if (i==mid) break;
-            // Set decelarating link
+            // Set decelerating link
             link = links[j];
             LinkTools.LinkSetData(link, "Speed", speed);
             LinkTools.LinkSetData(link, "Pause (ms)", 0);
@@ -706,15 +393,11 @@ class PathElevatorController extends SqRootScript {
         LinkTools.LinkSetData(link, "Speed", 0.0);
         LinkTools.LinkSetData(link, "Pause (ms)", 0);
         LinkTools.LinkSetData(link, "Path Limit?", true);
-
-        // TODO: adjust all TPath links from stops
-        //       to set speeds according to the path we
-        //       are taking.
+        // Start going.
         SetData("PathElevatorController.Stop", 0);
         SetData("PathElevatorController.Dest", toStop);
-        // TODO: hey, we dont need a call, right? we can just start going?
         Property.Set(elevator, "MovingTerrain" ,"Active", true);
-
+        // TODO: doors?
         // And close all the doors.
         DoDoors(-1, false);
     }
@@ -727,19 +410,15 @@ class PathElevatorController extends SqRootScript {
             return;
         }
         local waypt = message().data;
-        // Set our rotate tweq to turn towards the direction
-        // of movement.
-
+        // TODO: Set our rotate tweq to turn towards the direction
+        // of movement? (FaceWaypoint doesnt work, it can only rotate in one direction)
 
         // Find out if we arrived at a stop.
-        //local floor = Property.Get(waypt, "SchMsg").tointeger();
-        local link = Link.GetOne("~ScriptParams", waypt);
-        if (link==0) {
-            Log("boring point "+waypt);
+        local stop = GetStopPointId(waypt);
+        if (stop==0) {
+            // Boring intermediate point.
             return;
         }
-        local value = LinkTools.LinkGetData(link, "");
-        local stop = GetStopPointId(value);
         // Is this our destination stop?
         local toStop = GetData("PathElevatorController.Dest");
         if (stop==toStop) {
@@ -755,8 +434,17 @@ class PathElevatorController extends SqRootScript {
     }
 }
 
-class DumpMessages extends SqRootScript {
-    function OnMessage() {
-        print("<< "+self+" got "+message().message+" from "+message().from+" >>");
+// Support script for ElevatorController and PathElevatorController.
+class ControlledElevator extends SqRootScript {
+    function OnMovingTerrainWaypoint() {
+        local waypt = message().waypoint;
+        local targets = [];
+        local links = Link.GetAll("~ControlDevice", self);
+        foreach (link in links) {
+            targets.append(LinkDest(link));
+        }
+        foreach (obj in targets) {
+            SendMessage(obj, "ElevatorAtWaypoint", waypt);
+        }
     }
 }
