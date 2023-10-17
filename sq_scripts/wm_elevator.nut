@@ -240,7 +240,7 @@ class PathElevatorController extends SqRootScript {
         DoDoors(0, false);
         DoDoors(atStop, true);
         DoGizmos(0, false);
-        DoTransientGizmos(atStop, true);
+        DoGizmos(atStop, true);
     }
 
     function GetElevator() {
