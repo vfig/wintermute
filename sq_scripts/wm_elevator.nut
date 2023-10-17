@@ -240,7 +240,7 @@ class PathElevatorController extends SqRootScript {
         DoDoors(0, false);
         DoDoors(atStop, true);
         DoGizmos(0, false);
-        DoGizmos(atStop, true);
+        DoTransientGizmos(atStop, true);
     }
 
     function GetElevator() {
@@ -321,6 +321,22 @@ class PathElevatorController extends SqRootScript {
                 }
                 Log("Posting PathElevStop("+atStop+") to gizmo "+obj);
                 PostMessage(obj, "PathElevStop", atStop);
+            }
+        }
+    }
+
+    function DoTransientGizmos(toStop, turnOn) {
+        local links = Link.GetAll("ScriptParams", self);
+        foreach (link in links) {
+            local value = LinkTools.LinkGetData(link, "").tostring().tolower();
+            if (value!="transient") continue;
+            local obj = LinkDest(link);
+            if (ObjIsGizmo(obj)) {
+                local stop = Property.Get(obj, "SchMsg").tointeger();
+                if (toStop==0 || toStop==stop) {
+                    Log((turnOn? "turning on":"turning off")+" transient gizmo "+obj);
+                    PostMessage(obj, (turnOn? "TurnOn":"TurnOff"));
+                }
             }
         }
     }
@@ -448,6 +464,7 @@ class PathElevatorController extends SqRootScript {
         // And close all the doors.
         DoDoors(0, false);
         DoGizmos(0, false);
+        DoTransientGizmos(abs(toStop), true);
     }
 
     function OnElevatorAtWaypoint() {
@@ -477,14 +494,15 @@ class PathElevatorController extends SqRootScript {
         // Is this our destination stop?
         local toStop = GetData("PathElevatorController.Dest");
         if (stop==toStop) {
-            Log("arrived at stop "+stop);
-            SetData("PathElevatorController.Stop", stop);
+            Log("arrived at stop "+toStop);
+            SetData("PathElevatorController.Stop", toStop);
             SetData("PathElevatorController.Dest", 0);
             Property.Set(elevator, "MovingTerrain", "Active", false);
             SendMessage(elevator, "Stopping");
             // Open the doors at this floor.
-            DoDoors(abs(stop), true);
-            DoGizmos(abs(stop), true);
+            DoTransientGizmos(0, false);
+            DoDoors(abs(toStop), true);
+            DoGizmos(abs(toStop), true);
         } else {
             Log("passing stop "+stop);
         }
