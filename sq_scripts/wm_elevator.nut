@@ -302,7 +302,7 @@ class PathElevatorController extends SqRootScript {
                 local stop = Property.Get(obj, "SchMsg").tointeger();
                 if (atStop==0 || atStop==stop) {
                     Log((open? "opening":"closing")+" door "+obj);
-                    SendMessage(obj, (open? "Open":"Close"));
+                    PostMessage(obj, (open? "Open":"Close"));
                 }
             }
         }
@@ -316,8 +316,10 @@ class PathElevatorController extends SqRootScript {
                 local stop = Property.Get(obj, "SchMsg").tointeger();
                 if (atStop==0 || atStop==stop) {
                     Log((turnOn? "turning on":"turning off")+" gizmo "+obj);
-                    SendMessage(obj, (turnOn? "TurnOn":"TurnOff"));
+                    PostMessage(obj, (turnOn? "TurnOn":"TurnOff"));
                 }
+                Log("Posting PathElevStop("+atStop+") to gizmo "+obj);
+                PostMessage(obj, "PathElevStop", atStop);
             }
         }
     }
@@ -484,6 +486,94 @@ class ControlledElevator extends SqRootScript {
         }
         foreach (obj in targets) {
             SendMessage(obj, "ElevatorAtWaypoint", waypt);
+        }
+    }
+}
+
+// Mission-specific control of fence joints according to the stops.
+class WorkerTrainFence extends SqRootScript {
+    function ResetJoints(joint1, joint2, joint3, joint4, position) {
+        if (joint1) {
+            local v = GetProperty("CfgTweqJoints", "    rate-low-high");
+            SetProperty("JointPos", "Joint 1", (position==0? v.y : v.z));
+        }
+        if (joint2) {
+            local v = GetProperty("CfgTweqJoints", "    rate-low-high2");
+            SetProperty("JointPos", "Joint 2", (position==0? v.y : v.z));
+        }
+        if (joint3) {
+            local v = GetProperty("CfgTweqJoints", "    rate-low-high3");
+            SetProperty("JointPos", "Joint 3", (position==0? v.y : v.z));
+        }
+        if (joint4) {
+            local v = GetProperty("CfgTweqJoints", "    rate-low-high4");
+            SetProperty("JointPos", "Joint 4", (position==0? v.y : v.z));
+        }
+    }
+
+    function AnimateJoints(joint1, joint2, joint3, joint4, position) {
+        local flags = TWEQ_AS_ONOFF;
+        if (position==0) flags = flags | TWEQ_AS_REVERSE;
+        if (joint1) {
+            SetProperty("StTweqJoints", "Joint1AnimS", flags);
+        } else {
+            SetProperty("StTweqJoints", "Joint1AnimS", 0);
+            ResetJoints(true, false, false, false, 1);
+        }
+        if (joint2) {
+            SetProperty("StTweqJoints", "Joint2AnimS", flags);
+        } else {
+            SetProperty("StTweqJoints", "Joint2AnimS", 0);
+            ResetJoints(false, true, false, false, 1);
+        }
+        if (joint3) {
+            SetProperty("StTweqJoints", "Joint3AnimS", flags);
+        } else {
+            SetProperty("StTweqJoints", "Joint3AnimS", 0);
+            ResetJoints(false, false, true, false, 1);
+        }
+        if (joint4) {
+            SetProperty("StTweqJoints", "Joint4AnimS", flags);
+        } else {
+            SetProperty("StTweqJoints", "Joint4AnimS", 0);
+            ResetJoints(false, false, false, true, 1);
+        }
+        SetProperty("StTweqJoints", "AnimS", flags);
+    }
+
+    // Open the appropriate fences for each stop.
+    // This is the low fences; only the exit retracts.
+    function OnPathElevStop() {
+        local stop = message().data;
+        if (stop==0) {
+            AnimateJoints(true, true, true, true, 1);
+        } else if (stop==1) {
+            AnimateJoints(false, false, true, false, 0);
+        } else if (stop==2) {
+            AnimateJoints(true, false, false, false, 0);
+        } else if (stop==3) {
+            AnimateJoints(false, true, false, false, 0);
+        } else if (stop==4) {
+            AnimateJoints(false, false, true, false, 0);
+        }
+    }
+}
+
+class WorkerTrainFence2 extends WorkerTrainFence {
+    // Open the appropriate fences for each stop.
+    // This is the high fences; both the exit and the button side retracts.
+    function OnPathElevStop() {
+        local stop = message().data;
+        if (stop==0) {
+            AnimateJoints(true, true, true, true, 1);
+        } else if (stop==1) {
+            AnimateJoints(true, false, true, false, 0);
+        } else if (stop==2) {
+            AnimateJoints(true, false, true, false, 0);
+        } else if (stop==3) {
+            AnimateJoints(false, true, false, true, 0);
+        } else if (stop==4) {
+            AnimateJoints(false, false, true, true, 0);
         }
     }
 }
