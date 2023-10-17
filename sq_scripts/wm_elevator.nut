@@ -582,7 +582,7 @@ class WorkerTrainFence extends SqRootScript {
         if (stop==0) {
             AnimateJoints(true, true, true, true, 1);
         } else if (stop==1) {
-            AnimateJoints(false, false, true, false, 0);
+            AnimateJoints(true, false, false, false, 0);
         } else if (stop==2) {
             AnimateJoints(true, false, false, false, 0);
         } else if (stop==3) {
