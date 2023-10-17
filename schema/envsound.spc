@@ -8,7 +8,7 @@
 
 //-------------------------------------------------------
 //EVENTS -what action just took place
-tag Event Acquire Launch Collision Footstep Damage StateChange Activate ActiveLoop Deactivate Death Select Reject MediaTrans Climbstep Motion Create Rotate Shoot WeaponCharge WeaponSwing Search
+tag Event Acquire Launch Collision Footstep Damage StateChange Activate ActiveLoop Deactivate Death Select Reject MediaTrans Climbstep Motion Create Rotate Shoot WeaponCharge WeaponSwing Search Speed
 env_tag_required Event
 
 
@@ -43,6 +43,9 @@ tag OldOpenState Open Closed Opening Closing
 //LEVER & SWITCH DIRECTIONS
 tag DirectionState Forward Reverse
 
+//Speed (of elevator etc)
+tag_int Speed
+
 //-------------------------------------------------------
 //ACTIVATE EVENT TAGS	
 
@@ -52,7 +55,7 @@ tag DeviceType GenPotion TimedPotion HolyH20 BlueLight CauldLvr MoldLvr CrunchyF
 
 tag AlarmType Gong BellSm RmzAlarm DinnerBell Alarm MechRedAlarm MechTowerAlarm FlickerLight
 
-tag ElevType Elev1Plat Elev2Hmr Elev3WHdoor TubeLift SkyLight LightHseFloor DumbWaiter MovingTarget
+tag ElevType Elev1Plat Elev2Hmr Elev3WHdoor TubeLift SkyLight LightHseFloor DumbWaiter MovingTarget WorkerTrain
 
 tag SwitchType BPush BPull BElev BRmz BBook LvWall LvThrow LvFloor1 LvFloor2 LvSlide LvPanel PPlate LvScope LvRotate LvMechAnt BNumber BVicLight LvShipWheel
 

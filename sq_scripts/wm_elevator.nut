@@ -194,6 +194,7 @@ class ElevatorController extends SqRootScript {
 //
 
 class PathElevatorController extends SqRootScript {
+    // TODO: clean up all the cruft in here!
     function OnSim() {
         if (message().starting) {
             Setup();
@@ -402,6 +403,7 @@ class PathElevatorController extends SqRootScript {
             links.append(link);
             pt = LinkDest(link);
         }
+        // TODO: make these be userparams
         local minSpeed = 3.0;
         local maxSpeed = 20.0;
         local speedIncrement = 2.0;
@@ -441,6 +443,8 @@ class PathElevatorController extends SqRootScript {
         SetData("PathElevatorController.Stop", 0);
         SetData("PathElevatorController.Dest", toStop);
         Property.Set(elevator, "MovingTerrain" ,"Active", true);
+        SendMessage(elevator, "Starting");
+        SendMessage(elevator, "Speed", minSpeed);
         // And close all the doors.
         DoDoors(0, false);
         DoGizmos(0, false);
@@ -457,6 +461,13 @@ class PathElevatorController extends SqRootScript {
         // TODO: Set our rotate tweq to turn towards the direction
         // of movement? (FaceWaypoint doesnt work, it can only rotate in one direction)
 
+        // Notify the elevator of the speed change (for sounds; actual movement
+        // speed is handled by the Moving Terrain in the engine).
+        local link = Link.GetOne("TPath", waypt);
+        if (link!=0) {
+            local speed = LinkTools.LinkGetData(link, "Speed");
+            SendMessage(elevator, "Speed", speed);
+        }
         // Find out if we arrived at a stop.
         local stop = GetStopPointId(waypt);
         if (stop==0) {
@@ -470,6 +481,7 @@ class PathElevatorController extends SqRootScript {
             SetData("PathElevatorController.Stop", stop);
             SetData("PathElevatorController.Dest", 0);
             Property.Set(elevator, "MovingTerrain", "Active", false);
+            SendMessage(elevator, "Stopping");
             // Open the doors at this floor.
             DoDoors(abs(stop), true);
             DoGizmos(abs(stop), true);
@@ -580,5 +592,35 @@ class WorkerTrainFence2 extends WorkerTrainFence {
         } else if (stop==4) {
             AnimateJoints(false, false, true, true, 0);
         }
+    }
+}
+
+// Like ElevatorSounds, but plays (Speed <speed>) instead of (Event ActiveLoop) when moving.
+class TrainSounds extends SqRootScript {
+    function OnSim() {
+        if (message().starting) {
+            SetData("ElevSpeed", 0.0);
+        }
+    }
+
+    function OnSpeed() {
+        local speed = message().data;
+        if (speed==null) speed = 20.0;
+        local oldSpeed = GetData("ElevSpeed");
+        if (speed!=oldSpeed) {
+            Sound.HaltSchema(self);
+            if (speed>0.0) {
+                Sound.PlayEnvSchema(self, "Speed "+speed, self);
+                SetData("ElevSpeed", speed);
+            } else {
+                SetData("ElevSpeed", 0.0);
+            }
+        }
+    }
+
+    function OnStopping() {
+        Sound.HaltSchema(self);
+        Sound.PlayEnvSchema(self, "Event Deactivate", self);
+        SetData("ElevSpeed", 0.0);
     }
 }
