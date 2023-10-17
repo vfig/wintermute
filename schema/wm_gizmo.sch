@@ -49,3 +49,9 @@ archetype DEVICE_MISC
 mono_loop 0 0
 volume -2000
 arcs
+
+// Worker train button ignored
+schema Button_elev_rej
+archetype DEVICE_SWITCH
+buzzer
+env_tag (Event Reject) (SwitchType BElev)

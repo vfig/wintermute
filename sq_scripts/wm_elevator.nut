@@ -334,6 +334,10 @@ class PathElevatorController extends SqRootScript {
         local isMoving = Property.Get(elevator, "MovingTerrain", "Active");
         if (isMoving) {
             Log("Elevator is in motion; ignoring summons.");
+            local from = message().from;
+            if (from!=0) {
+                Sound.PlayEnvSchema(from, "Event Reject", from);
+            }
             return;
         }
         // TODO: check the saved "at stop", and abort if it is zero (we may not
@@ -559,6 +563,7 @@ class WorkerTrainFence extends SqRootScript {
     }
 }
 
+// Mission-specific control of fence joints according to the stops.
 class WorkerTrainFence2 extends WorkerTrainFence {
     // Open the appropriate fences for each stop.
     // This is the high fences; both the exit and the button side retracts.
