@@ -50,6 +50,12 @@ volume -1000
 lvrotat2
 env_tag (Event Deactivate) (DeviceType LockingBarCrank)
 
+// Air puff from fans
+schema wm_fanpuff
+archetype DEVICE_MISC
+volume -2000
+gasemit
+
 // Electrified rail
 schema wm_elecrail
 archetype DEVICE_MISC
