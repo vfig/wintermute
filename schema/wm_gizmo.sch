@@ -6,6 +6,13 @@ volume -2000
 gears4
 env_tag (Event Activate) (DeviceType Contraption)
 
+schema wm_contrapshit
+archetype DEVICE_MISC
+no_repeat
+volume -2000
+ft_frog1 ft_frog2
+env_tag (Event Activate) (DeviceType Contraption) (Fungus true)
+
 // Locking bar "door" moving.
 schema wm_lockbar_op
 archetype DEVICE_MISC
