@@ -585,3 +585,47 @@ class ToolScroll extends SqRootScript {
     }
 }
 
+class TestScrollAcceptance extends SqRootScript {
+    function Log(msg) {
+        print(Object.GetName(self)+" ("+self+"): "+msg);
+    }
+
+    function LogMessage() {
+        Log(message().message+" from "+Object.GetName(message().from)+" ("+message().from+")");
+    }
+
+    function GetTarget() {
+        local link = Link.GetOne("ControlDevice", self);
+        return (link? LinkDest(link) : 0);
+    }
+
+    function OnTakeItem() {
+        LogMessage();
+        local from = message().from;
+        local scroll = message().data;
+        local target = GetTarget();
+
+        // Only accept unrolled scrolls.
+        local ok = Object.InheritsFrom(scroll, "Unrolled Scroll");
+        if (ok) {
+            // Take the scroll for a moment (so the target will expulse).
+            // This container juggling is a bit awkward, but it allows us to
+            // use a single TakeItem message for everything. Is that actually
+            // a good idea? Who knows.
+            // TODO: maybe use data2 to indicate ingest/expulse?
+            Container.Add(scroll, self);
+            // Ask our target to take the scroll for us.
+            local targetOk = SendMessage(target, "TakeItem", scroll);
+            if (targetOk) {
+                Reply(true);
+            } else {
+                // Return the scroll to the sender.
+                Container.Add(scroll, from);
+                Reply(false);
+            }
+        } else {
+            // Reject the scroll.
+            Reply(false);
+        }
+    }
+}
