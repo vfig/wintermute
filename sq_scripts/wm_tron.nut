@@ -387,33 +387,131 @@ class TronInterface extends SqRootScript {
     }
 }
 
-class ScrollSlotIngest extends SqRootScript {
-    function IsActive() {
-        if (IsDataSet("Active"))
-            return GetData("Active");
-        else
-            return false;
+class ScrollSlot extends SqRootScript {
+    function Log(msg) {
+        print(Object.GetName(self)+" ("+self+"): "+msg);
     }
 
-    function SetActive(active) {
-        local isActive = IsActive();
-        if (active!=isActive) {
-            SetData("Active", active);
-            local range = GetProperty("CfgTweqJoints", "    rate-low-high");
-            if (active) {
-                // Turn on.
-                print("Turn On");
-                SetProperty("JointPos", "Joint 1", range.z);
-                SetProperty("StTweqJoints", "AnimS", TWEQ_AS_ONOFF|TWEQ_AS_REVERSE);
-                OnDisable();
+    function LogMessage() {
+        Log(message().message+" from "+Object.GetName(message().from)+" ("+message().from+")");
+    }
+
+    function OnWorldSelect() {
+        LogMessage();
+        MakeToolScrolls(true);
+    }
+
+    function OnWorldDeSelect() {
+        LogMessage();
+        MakeToolScrolls(false);
+    }
+
+    function OnEnable() {
+        LogMessage();
+        SetFrobEnabled(true);
+    }
+
+    function OnDisable() {
+        LogMessage();
+        SetFrobEnabled(false);
+    }
+
+    function OnTakeItem() {
+        LogMessage();
+        local from = message().from;
+        local scroll = message().data;
+        local target = GetTarget();
+        // If the sender already contains the scroll, that means they are asking
+        // us to take over and spit it out.
+        local isIngest = !Link.AnyExist("Contains", from, scroll);
+        // Don't accept if we already have a scroll, or we are locked,
+        // or we are currently in motion, or the message data was bogus,
+        // or (if ingesting) we don't have a target.
+        if (Link.AnyExist("Contains", self)
+        || Locked.IsLocked(self)
+        || IsActive()
+        || (scroll==null || scroll==0)
+        || (isIngest && target==0)) {
+            Log("Refusing to take item: "+scroll);
+            Sound.PlayEnvSchema(self, "Event Reject", self);
+            Reply(false);
+            return;
+        }
+        // Take the scroll...
+        Container.Add(scroll, self);
+        SetActive(true);
+        SetFrobEnabled(false);
+        if (isIngest) {
+            // ...and begin the ingestion animation.
+            ResetJoints(1);
+            AnimateJoints(1);
+            Sound.PlayEnvSchema(self, "Event Activate", self);
+        } else {
+            // ...and begin the expulsion animation.
+            ResetJoints(0);
+            AnimateJoints(0);
+            Sound.PlayEnvSchema(self, "Event Deactivate", self);
+        }
+        Reply(true);
+    }
+
+    function OnTweqComplete() {
+        LogMessage();
+        if (message().Type==eTweqType.kTweqTypeJoints) {
+            local wasIngesting = (message().Dir==eTweqDirection.kTweqDirReverse);
+            local link = Link.GetOne("Contains", self);
+            if (! link) {
+                // We don't have a scroll?
+                Log("Weird. TweqComplete but we don't have a scroll.");
+                return;
+            }
+            local scroll = LinkDest(link);
+            local target = GetTarget();
+            if (wasIngesting && !target) {
+                // We don't have a target?!
+                Log("Weird. TweqComplete but we don't have a target.");
+                return;
+            }
+            if (wasIngesting) {
+                // Pass the item over to our target, if it is willing.
+                local didAccept = SendMessage(target, "TakeItem", scroll);
+                // Double check if the item was actually removed from us,
+                // as a naive OnTakeItem() method might forget to Reply().
+                local stillContains = Link.AnyExist("Contains", self, scroll);
+                if (didAccept && stillContains) {
+                    didAccept = false;
+                } else if (!didAccept && !stillContains) {
+                    didAccept = true;
+                }
+                if (didAccept) {
+                    // Ready for more.
+                    SetActive(false);
+                    SetFrobEnabled(true);
+                    ResetJoints(0);
+                } else {
+                    // Send this scroll back out.
+                    ResetJoints(0);
+                    AnimateJoints(0);
+                    Sound.PlayEnvSchema(self, "Event Deactivate", self);
+                }
             } else {
-                // Turn off.
-                print("Turn Off");
-                SetProperty("StTweqJoints", "AnimS", 0);
-                SetProperty("JointPos", "Joint 1", range.y);
-                OnEnable();
+                // Uncontain the scroll again.
+                local range = GetProperty("CfgTweqJoints", "    rate-low-high");
+                // Hardcoded position/facing tweaks for unrolled scroll:
+                local offset = vector(0,-0.125,range.z);
+                local facing = vector(90,0,0);
+                Object.Teleport(scroll, offset, facing, self);
+                Container.Remove(scroll, self);
+                SetActive(false);
+                SetFrobEnabled(true);
+                ResetJoints(0);
             }
         }
+    }
+
+    function GetTarget() {
+        local link = Link.GetOne("ControlDevice", self);
+        return (link? LinkDest(link) : 0);
     }
 
     function MakeToolScrolls(toolEnable) {
@@ -424,61 +522,19 @@ class ScrollSlotIngest extends SqRootScript {
         }
     }
 
-    function OnWorldSelect() {
-        print(Object.GetName(self)+" ("+self+"): "+message().message);
-        MakeToolScrolls(true);
-    }
-
-    function OnWorldDeSelect() {
-        print(Object.GetName(self)+" ("+self+"): "+message().message);
-        MakeToolScrolls(false);
-    }
-
-    function OnEnable() {
-        print(Object.GetName(self)+" ("+self+"): "+message().message+" at "+GetTime());
-        Object.RemoveMetaProperty(self, "FrobInert");
-    }
-
-    function OnDisable() {
-        print(Object.GetName(self)+" ("+self+"): "+message().message+" at "+GetTime());
-        // NOTE: We won't get the WorldDeSelect message when we become
-        //       FrobInert, so we manually disable tool scrolls now.
-        MakeToolScrolls(false);
-        if (! Object.HasMetaProperty(self, "FrobInert")) {
-            Object.AddMetaProperty(self, "FrobInert");
-        }
-    }
-
-    function OnScrollFrob() {
-        print(Object.GetName(self)+" ("+self+"): "+message().message
-            +" from "+Object.GetName(message().from)+" ("+message().from+")");
-        if (! IsActive()) {
-            local scroll = message().from;
-            Container.Remove(scroll);
-            Container.Add(scroll, self);
-            SetActive(true);
-        }
-    }
-
-    function OnTweqComplete() {
-        if (message().Type==eTweqType.kTweqTypeJoints) {
-            SetActive(false);
-            local link = Link.GetOne("ControlDevice", self);
-            if (link) {
-                local expulsor = LinkDest(link);
-                Container.MoveAllContents(self, expulsor);
-                SendMessage(expulsor, "TurnOn");
+    function SetFrobEnabled(enabled) {
+        if (enabled) {
+            Object.RemoveMetaProperty(self, "FrobInert");
+        } else {
+            // NOTE: We won't get the WorldDeSelect message when we become
+            //       FrobInert, so we manually disable tool scrolls now.
+            MakeToolScrolls(false);
+            if (! Object.HasMetaProperty(self, "FrobInert")) {
+                Object.AddMetaProperty(self, "FrobInert");
             }
         }
     }
 
-    function OnMessage() {
-        print(Object.GetName(self)+" ("+self+"): "+message().message
-            +" from "+Object.GetName(message().from)+" ("+message().from+")");
-    }
-}
-
-class ScrollSlotExpulse extends SqRootScript {
     function IsActive() {
         if (IsDataSet("Active"))
             return GetData("Active");
@@ -487,70 +543,25 @@ class ScrollSlotExpulse extends SqRootScript {
     }
 
     function SetActive(active) {
-        local isActive = IsActive();
-        if (active!=isActive) {
-            SetData("Active", active);
-            local range = GetProperty("CfgTweqJoints", "    rate-low-high");
-            if (active) {
-                // Turn on.
-                EnableControllers(false);
-                SetProperty("JointPos", "Joint 1", range.y);
-                SetProperty("StTweqJoints", "AnimS", TWEQ_AS_ONOFF);
-                print("EXPULSING");
-                Link.BroadcastOnAllLinks(self, "TurnOn", "ControlDevice");
-            } else {
-                // Turn off.
-                EnableControllers(true);
-                SetProperty("StTweqJoints", "AnimS", 0);
-                SetProperty("JointPos", "Joint 1", range.y);
-                print("EXPULSE COMPLETE. Should be setting joint 1 to "+range.y);
-                Link.BroadcastOnAllLinks(self, "TurnOff", "ControlDevice");
-            }
-        }
+        SetData("Active", active);
     }
 
-    function EnableControllers(enable) {
-        local msg = (enable? "Enable" : "Disable");
-        local link = Link.GetOne("~ControlDevice", self);
-        if (link) {
-            local ingestor = LinkDest(link);
-            SendMessage(ingestor, msg);
+    function ResetJoints(position) {
+        local range = GetProperty("CfgTweqJoints", "    rate-low-high");
+        if (position>0) {
+            SetProperty("JointPos", "Joint 1", range.z);
+        } else {
+            SetProperty("JointPos", "Joint 1", range.y);
         }
+        SetProperty("StTweqJoints", "AnimS", 0);
     }
 
-    function OnTurnOn() {
-        // TODO: we have a race condition where the player could feed multiple
-        //       objects in while we are still pumping one out! those objects
-        //       might then get lost?
-        print(Object.GetName(self)+" ("+self+"): "+message().message
-            +" from "+Object.GetName(message().from)+" ("+message().from+")");
-        if (! IsActive()) {
-            SetActive(true);
+    function AnimateJoints(fromPosition) {
+        if (fromPosition>0) {
+            SetProperty("StTweqJoints", "AnimS", TWEQ_AS_ONOFF|TWEQ_AS_REVERSE);
+        } else {
+            SetProperty("StTweqJoints", "AnimS", TWEQ_AS_ONOFF);
         }
-    }
-
-    function OnTweqComplete() {
-        if (message().Type==eTweqType.kTweqTypeJoints) {
-            SetActive(false);
-            // Expulse all objects
-            local objects = [];
-            foreach (link in Link.GetAll("Contains", self)) {
-                objects.append(LinkDest(link));
-            }
-            local range = GetProperty("CfgTweqJoints", "    rate-low-high");
-            local offset = vector(0,-0.125,range.z);
-            local facing = vector(90,0,0); // Hardcoded for unrolled scroll.
-            foreach (obj in objects) {
-                Object.Teleport(obj, offset, facing, self);
-                Container.Remove(obj, self);
-                SendMessage(obj, "Transmogrify");
-            }
-        }
-    }
-
-    function OnMessage() {
-        print(Object.GetName(self)+" ("+self+"): "+message().message
-            +" from "+Object.GetName(message().from)+" ("+message().from+")");
     }
 }
 
@@ -570,7 +581,7 @@ class ToolScroll extends SqRootScript {
         print(Object.GetName(self)+" ("+self+"): "+message().message
             +" Src:"+Object.GetName(message().SrcObjId)+" ("+message().SrcObjId+")"
             +" Dst:"+Object.GetName(message().DstObjId)+" ("+message().DstObjId+")");
-        SendMessage(message().DstObjId, "ScrollFrob");
+        SendMessage(message().DstObjId, "TakeItem", self);
     }
 }
 

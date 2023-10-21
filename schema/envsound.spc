@@ -51,7 +51,7 @@ tag_int Speed
 
 
 //DEVICES
-tag DeviceType GenPotion TimedPotion HolyH20 BlueLight CauldLvr MoldLvr CrunchyFood SoftFood Piano Whistle LitFlare PowderKeg Lockbox Banner Contraption LockingBarCrank LockingBarGear
+tag DeviceType GenPotion TimedPotion HolyH20 BlueLight CauldLvr MoldLvr CrunchyFood SoftFood Piano Whistle LitFlare PowderKeg Lockbox Banner Contraption LockingBarCrank LockingBarGear ScrollSlot
 
 tag AlarmType Gong BellSm RmzAlarm DinnerBell Alarm MechRedAlarm MechTowerAlarm FlickerLight
 
