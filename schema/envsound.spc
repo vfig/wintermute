@@ -8,7 +8,7 @@
 
 //-------------------------------------------------------
 //EVENTS -what action just took place
-tag Event Acquire Launch Collision Footstep Damage StateChange Activate ActiveLoop Deactivate Death Select Reject MediaTrans Climbstep Motion Create Rotate Shoot WeaponCharge WeaponSwing Search Speed
+tag Event Acquire Launch Collision Footstep Damage StateChange Activate ActiveLoop Deactivate Death Select Reject MediaTrans Climbstep Motion Create Rotate Shoot WeaponCharge WeaponSwing Search Speed Knock
 env_tag_required Event
 
 

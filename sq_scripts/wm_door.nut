@@ -129,9 +129,7 @@ class ToggleRefs extends SqRootScript {
     }
 }
 
-// Present as being locked when frobbed from the wrong side
-// (by the player; we can't do this to AIs or their pathing
-// will leave them walking into the door forever).
+// Present as being locked when frobbed from the wrong side.
 //
 // Make sure this script comes *before* StdDoor (this will
 // be true when the parent/archetype has SdtDoor and child/
@@ -147,19 +145,38 @@ class OneSidedDoor extends SqRootScript {
         // If the door is not closed, let it operate normally.
         local status = Door.GetDoorState(self);
         if (status!=eDoorStatus.kDoorClosed) return;
-        // If the frobber is not the player, let them open it normally.
-        local player = Object.Named("Player");
-//        if (frobber!=player) return;
         // If the frobber is not on the door's +Y side (local space),
         // let it open normally.
         local frobberPos = Object.Position(frobber);
         local relPos = Object.WorldToObject(self, frobberPos);
-        print("Frobber relative pos:"+relPos);
         if (relPos.y<=0.0) return;
-        // Okay, pretend we are locked and block the frob.
-        Sound.PlayEnvSchema(self, "Event Reject, Operation OpenDoor", self);
-        //(Event Reject) (Operation OpenDoor)
-        BlockMessage();
+        // Now decide how to react:
+        if (frobber==Object.Named("Player")) {
+            // To the player, pretend we are locked.
+            Sound.PlayEnvSchema(self, "Event Reject, Operation OpenDoor", self);
+            BlockMessage();
+        } else {
+            // To an AI, make them do a little play-acting to get it open.
+            // NOTE: The watch pseudoscript needs to run even at high alert,
+            //       and should end with sending an Open message to the door
+            //       and waiting ~1s for it to open; then the AI can resume
+            //       whatever behaviour it was doing prior.
+            if (HasProperty("AI_WtchPnt")) {
+                if (!Link.AnyExist("AIWatchObj", frobber, self)) {
+                    Link.Create("AIWatchObj", frobber, self);
+                }
+                BlockMessage();
+            } else {
+                // Let the AI cheat and open the door anyway if there is no
+                // Watch Link Defaults property, otherwise they would get stuck
+                // and just walk into the door frobbing it forever.
+                //
+                // So no BlockMessage() here.
+            }
+        }
+    }
+
+    function OnKnock() {
+        Sound.PlayEnvSchema(self, "Event Knock", self);
     }
 }
-

@@ -12,8 +12,6 @@ volume -100
 dorwheel2
 env_tag (Event Deactivate) (DoorType Pressure)
 
-//Activate 
-
 //PRESSURE DOOR 1 - JOINTS OPENING - PLAYER
 schema d_press_jo_p
 archetype PLYR_DOOR
@@ -27,3 +25,10 @@ archetype PLYR_DOOR
 volume -500
 dorwheel2
 env_tag (Event Deactivate) (DoorType Pressure) (CreatureType Player)
+
+//PRESSURE DOOR - knock
+schema d_press_kn
+archetype AI_DOOR
+volume -500
+dorknock2
+env_tag (Event Knock) (DoorType Pressure)
