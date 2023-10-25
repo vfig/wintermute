@@ -220,24 +220,28 @@ d_met4c
 env_tag (Event StateChange) (DoorType Metal4Mech) (OpenState Closed) (OldOpenState Opening Closing) (CreatureType Player)
 
 
+// NOTE: because Player and AI pressure door sounds are being conflated due
+//       to the DoorJointsFirst script, give them a middling volume so as
+//       to compromise between the AI's -500 and player's -1200.
+
 //PRESSURE DOOR -PLYR OPENING & CLOSING
 schema d_press_op_p
 archetype PLYR_DOOR
-volume -1200
+volume -800
 d_met2o
 env_tag (Event StateChange) (DoorType Pressure) (OpenState Opening) (OldOpenState Open Opening Closed Closing) (CreatureType Player)
 
 //PRESSURE DOOR -PLYR OPEN SLAM
 schema d_press_sq_p
 archetype PLYR_DOOR
-volume -1200
+volume -800
 d_met2o2
 env_tag (Event StateChange) (DoorType Pressure) (OpenState Open) (OldOpenState Open Opening) (CreatureType Player)
 
 //PRESSURE  DOOR 2 -PLYR CLOSE SLAM
 schema d_press_cl_p
 archetype PLYR_DOOR
-volume -1200
+volume -800
 d_met2c
 env_tag (Event StateChange) (DoorType Pressure) (OpenState Closed) (OldOpenState Closing) (CreatureType Player)
 
@@ -624,24 +628,28 @@ d_met4c
 env_tag (Event StateChange) (DoorType Metal4Mech) (OpenState Closed) (OldOpenState Opening Closing) 
 
 
+// NOTE: because Player and AI pressure door sounds are being conflated due
+//       to the DoorJointsFirst script, give them a middling volume so as
+//       to compromise between the AI's -500 and player's -1200.
+
 //PRESSURE DOOR 1 -AI OPENING & CLOSING
 schema d_press_op_a
 archetype AI_DOOR
-volume -500
+volume -800
 d_met2o
 env_tag (Event StateChange) (DoorType Pressure) (OpenState Opening Closing) (OldOpenState Open Opening Closed Closing) 
 
 //PRESSURE DOOR 2 -AI OPEN SLAM
 schema d_press_sq_a
 archetype AI_DOOR
-volume -500
+volume -800
 d_met2o2
 env_tag (Event StateChange) (DoorType Pressure) (OpenState Open) (OldOpenState  Opening)
 
 //PRESSURE DOOR 2 -AI CLOSE SLAM
 schema d_press_cl_a
 archetype AI_DOOR
-volume -500
+volume -800
 d_met2c
 env_tag (Event StateChange) (DoorType Pressure) (OpenState Closed) (OldOpenState Closing)
 

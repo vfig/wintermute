@@ -12,20 +12,36 @@ class DoorStartsOpen extends SqRootScript
    opening the door, and forward after closing the door.
    (The stock SubDoorJoints script runs tweqs as the door opens)
 */
+// BUG: because this blocks StdDoor from seeing the the frob messages,
+//      it doesnt know that it is the player frobbing, so plays the AI
+//      sounds (i.e. sans "CreatureType Player"). The only way to fix
+//      this is to completely redo all the StdDoor functionality in
+//      squirrel and then e.g. inherit it for this joints behaviour.
+//      But it's not a big enough problem for me to bother.
 class DoorJointsFirst extends SqRootScript
 {
     function OnFrobWorldEnd() {
+        // Keep track of if it was the player for the sake of sound tags.
+        local isPlayer = (message().Frobber==Object.Named("Player"));
+        if (isPlayer) {
+            SetData("PlayerFrob", 1);
+        } else {
+            ClearData("PlayerFrob");
+        }
         local state = Door.GetDoorState(self);
         local flags = Property.Get(self, "StTweqJoints", "AnimS");
         if ((flags&TWEQ_AS_ONOFF)!=0) {
             if ((flags&TWEQ_AS_REVERSE)!=0) {
                 TweqJoints(TWEQ_AS_ONOFF);
+                PlayJointsSound(false);
             } else {
                 TweqJoints(TWEQ_AS_ONOFF|TWEQ_AS_REVERSE);
+                PlayJointsSound(true);
             }
             BlockMessage();
         } else if (state==eDoorStatus.kDoorClosed) {
             TweqJoints(TWEQ_AS_ONOFF|TWEQ_AS_REVERSE);
+            PlayJointsSound(true);
             BlockMessage();
         }
         // When the tweqs are not running and the door is
@@ -36,6 +52,7 @@ class DoorJointsFirst extends SqRootScript
         local state = Door.GetDoorState(self);
         if (state==eDoorStatus.kDoorClosed) {
             TweqJoints(TWEQ_AS_ONOFF|TWEQ_AS_REVERSE);
+            PlayJointsSound(true);
             BlockMessage();
         }
         // When the door is not closed, fall through to
@@ -47,6 +64,7 @@ class DoorJointsFirst extends SqRootScript
         local flags = Property.Get(self, "StTweqJoints", "AnimS");
         if ((flags&TWEQ_AS_ONOFF)!=0) {
             TweqJoints(TWEQ_AS_ONOFF);
+            PlayJointsSound(false);
             BlockMessage();
         }
         // When the tweqs are not running, fall through to
@@ -63,14 +81,21 @@ class DoorJointsFirst extends SqRootScript
 
     function OnTweqComplete() {
         if (message().Type==eTweqType.kTweqTypeJoints
-        && message().Op==eTweqOperation.kTweqOpHaltTweq
-        && message().Dir==eTweqDirection.kTweqDirForward) {
-            Door.OpenDoor(self);
+        && message().Op==eTweqOperation.kTweqOpHaltTweq) {
+            ClearData("PlayerFrob");
+            if (message().Dir==eTweqDirection.kTweqDirForward) {
+                Door.OpenDoor(self);
+            }
         }
     }
 
     function OnDoorClose() {
         TweqJoints(TWEQ_AS_ONOFF);
+        // We ought to play the joints closing sound here, but we don't:
+        // Because the StdDoor script will halt our schema immediately
+        // so as to play the door closed sound; and in any case the loud
+        // echoing clang of the pressure door closing pretty much makes
+        // our joints-closing sound inaudible anyway.
     }
 
     function TweqJoints(flags) {
@@ -79,6 +104,15 @@ class DoorJointsFirst extends SqRootScript
             Property.Set(self, "StTweqJoints", animS, flags);
         }
         Property.Set(self, "StTweqJoints", "AnimS", flags);
+    }
+
+    function PlayJointsSound(opening) {
+        local tags = (opening? "Event Activate":"Event Deactivate");
+        if (IsDataSet("PlayerFrob")) {
+            tags += ", CreatureType Player";
+        }
+        Sound.HaltSchema(self);
+        Sound.PlayEnvSchema(self, tags, self);
     }
 }
 
@@ -94,3 +128,38 @@ class ToggleRefs extends SqRootScript {
         SetProperty("CollisionType", 0);
     }
 }
+
+// Present as being locked when frobbed from the wrong side
+// (by the player; we can't do this to AIs or their pathing
+// will leave them walking into the door forever).
+//
+// Make sure this script comes *before* StdDoor (this will
+// be true when the parent/archetype has SdtDoor and child/
+// concrete has OneSidedDoor), as this needs to block the
+// frob messages from the wrong side.
+//
+// This is really just for the SubPressureDoor models with
+// the wheel on only one side (its -Y side).
+//
+class OneSidedDoor extends SqRootScript {
+    function OnFrobWorldEnd() {
+        local frobber = message().Frobber;
+        // If the door is not closed, let it operate normally.
+        local status = Door.GetDoorState(self);
+        if (status!=eDoorStatus.kDoorClosed) return;
+        // If the frobber is not the player, let them open it normally.
+        local player = Object.Named("Player");
+//        if (frobber!=player) return;
+        // If the frobber is not on the door's +Y side (local space),
+        // let it open normally.
+        local frobberPos = Object.Position(frobber);
+        local relPos = Object.WorldToObject(self, frobberPos);
+        print("Frobber relative pos:"+relPos);
+        if (relPos.y<=0.0) return;
+        // Okay, pretend we are locked and block the frob.
+        Sound.PlayEnvSchema(self, "Event Reject, Operation OpenDoor", self);
+        //(Event Reject) (Operation OpenDoor)
+        BlockMessage();
+    }
+}
+
