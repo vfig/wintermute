@@ -591,14 +591,14 @@ env_tag (Event StateChange) (DirectionState Forward) (SwitchType BVicLight)
 schema turbine_lp
 archetype DEVICE_MISC
 mono_loop 0 0
-volume -1000
+volume -1500
 turb2lp
 env_tag (Event Activate) (MachType Turbine)
 
 //TURBINE STOP
 schema turbine_st
 archetype DEVICE_MISC
-volume -1000
+volume -1500
 turb2st
 env_tag (Event Deactivate) (MachType Turbine)
 

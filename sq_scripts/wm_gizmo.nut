@@ -409,3 +409,43 @@ class LockingMechGear extends SqRootScript {
         Sound.HaltSchema(self);
     }
 }
+
+class DelayedOn extends SqRootScript {
+    function OnTurnOn() {
+        local delay_ms = 0;
+        if (HasProperty("ScriptTiming")) {
+            delay_ms = GetProperty("ScriptTiming").tointeger();
+        }
+        DisableTimer();
+        if (delay_ms>0) {
+            local timer = SetOneShotTimer("DelayedTurnOn", delay_ms/1000.0);
+            SetData("DelayTimer", timer);
+        } else {
+            ActuallyTurnOn();
+        }
+    }
+
+    function OnTurnOff() {
+        DisableTimer();
+        Link.BroadcastOnAllLinks(self, "TurnOff", "ControlDevice");
+    }
+
+    function OnTimer() {
+        if (message().name=="DelayedTurnOn") {
+            ClearData("DelayTimer");
+            ActuallyTurnOn();
+        }
+    }
+
+    function DisableTimer() {
+        if (IsDataSet("DelayTimer")) {
+            local timer = GetData("DelayTimer");
+            ClearData("DelayTimer");
+            KillTimer(timer);
+        }
+    }
+
+    function ActuallyTurnOn() {
+        Link.BroadcastOnAllLinks(self, "TurnOn", "ControlDevice");
+    }
+}
