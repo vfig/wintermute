@@ -48,31 +48,36 @@ Intel.AddCount <- function(type) {
     Quest.Set(qvar, count);
 }
 
-Intel.GetLastArch <- function() {
-    local qvar = "IntelArch";
-    if (Quest.Exists(qvar)) {
-        return Quest.Get(qvar).tointeger();
-    } else {
-        return 0;
-    }
-}
-
-Intel.SetLastArch <- function(archetype) {
-    Quest.Set("IntelArch", archetype.tointeger());
-}
-
-class IntelStack extends SqRootScript {
-    function OnBeginScript() {
-        Quest.SubscribeMsg(self, Intel.TypeQVar(IntelType.Blueprint));
-        Quest.SubscribeMsg(self, Intel.TypeQVar(IntelType.Correspondence));
-        Quest.SubscribeMsg(self, Intel.TypeQVar(IntelType.Specification));
-        UpdateName();
-    }
-
-    function OnEndScript() {
-        Quest.UnsubscribeMsg(self, Intel.TypeQVar(IntelType.Blueprint));
-        Quest.UnsubscribeMsg(self, Intel.TypeQVar(IntelType.Correspondence));
-        Quest.UnsubscribeMsg(self, Intel.TypeQVar(IntelType.Specification));
+class IsIntel extends SqRootScript {
+    /* on pickup, should
+        - add to intel stats qvars
+        - combine with existing intel stack (or fake it)
+        - enable corresponding pages (well, set appropriate qvars)
+        - 
+    */
+    function OnFrobWorldEnd() {
+        // Ignore attemps to pick us up by anyone other than the player.
+        local frobber = message().Frobber;
+        if (! Object.InheritsFrom(frobber, "Avatar")) {
+            print("ERROR: ("+self+") Only the player is allowed to frob us.");
+            return;
+        }
+        // TODO: enable corresponding pages
+        // Increment the appropriate intel type.
+        local params = userparams();
+        local type = -1;
+        if ("IntelType" in params) {
+            type = Intel.ParseType(params.IntelType);
+        } else {
+            print("ERROR: ("+self+") Missing IntelType userparam.");
+            return;
+        }
+        Intel.AddCount(type);
+        // Play a nice sound.
+        // TODO: make a custom pickup_intel schema that is the paper sound.
+        Sound.PlaySchemaAmbient(self, "pickup_loot");
+        // Merge with the glory of the fle--er, intelligence.
+        Container.Add(self, frobber);
     }
 
     function OnFrobInvEnd() {
@@ -83,7 +88,7 @@ class IntelStack extends SqRootScript {
         }
     }
 
-    function OnQuestChange() {
+    function OnContained() {
         UpdateName();
     }
 
@@ -94,6 +99,7 @@ class IntelStack extends SqRootScript {
             local modelName = Property.Get(intel, "ModelName");
             SetProperty("ModelName", modelName);
         }
+        UpdateName();
     }
 
     function UpdateName() {
@@ -120,51 +126,5 @@ class IntelStack extends SqRootScript {
         name += totalLabel+": "+total;
         name += "\"";
         SetProperty("GameName", name);
-    }
-}
-
-class IsIntel extends SqRootScript {
-    /* on pickup, should
-        - add to intel stats qvars
-        - combine with existing intel stack (or fake it)
-        - enable corresponding pages (well, set appropriate qvars)
-        - 
-    */
-    function OnFrobWorldEnd() {
-        local frobber = message().Frobber;
-        if (! Object.InheritsFrom(frobber, "Avatar")) {
-            // Ignore attemps to pick us up by anyone other than the player.
-            print("ERROR: ("+self+") Only the player is allowed to frob us.");
-            return;
-        }
-        EnsureIntelStack(frobber);
-
-        // What type are we?
-        local params = userparams();
-        local type = -1;
-        if ("IntelType" in params) {
-            type = Intel.ParseType(params.IntelType);
-        } else {
-            print("ERROR: ("+self+") Missing IntelType userparam.");
-            return;
-        }
-        // TODO: enable corresponding pages
-        Intel.AddCount(type);
-        // Play a nice sound.
-        // TODO: do we use pickup_loot, or a custom pickup_intel? 
-        Sound.PlaySchemaAmbient(self, "pickup_loot");
-        // Merge with the glory of the fle--er, intelligence.
-        Container.Add(self, frobber);
-    }
-
-    function EnsureIntelStack(frobber) {
-        // Make sure frobber has an IntelStack that we can combine with.
-        foreach (link in Link.GetAll("Contains", frobber)) {
-            if (Object.InheritsFrom(LinkDest(link), "IntelStack")) {
-                return;
-            }
-        }
-        local stack = Object.Create("IntelStack");
-        Container.Add(stack, frobber);
     }
 }
