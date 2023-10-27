@@ -26,9 +26,9 @@ Intel.TypeQVar <- function(type) {
 
 Intel.ParseType <- function(typeName) {
     typeName = typeName.tolower();
-    if (typeName=="blueprint") return IntelType.Blueprint;
-    else if (typeName=="correspondence") return IntelType.Correspondence;
-    else if (typeName=="specification") return IntelType.Specification;
+    if (typeName=="blue") return IntelType.Blueprint;
+    else if (typeName=="corr") return IntelType.Correspondence;
+    else if (typeName=="spec") return IntelType.Specification;
     throw ("Invalid intel type: "+typeName);
 }
 
@@ -93,21 +93,13 @@ class IsIntel extends SqRootScript {
         // TODO: figure out some kind of duplicate id detection, preferably
         //       immediately on mission start.
         // Get our parameters, or bail if they are not set.
-        local params = userparams();
-        local id = -1;
-        if ("IntelID" in params) {
-            id = params.IntelID.tointeger();
-        } else {
-            print("ERROR: ("+self+") Missing IntelID userparam.");
+        local params = ParseTypeAndID();
+        if (params==null) {
+            print("ERROR: ("+self+") Book: Text must be \"intel_<id>_<type>\".");
             return;
         }
-        local type = -1;
-        if ("IntelType" in params) {
-            type = Intel.ParseType(params.IntelType);
-        } else {
-            print("ERROR: ("+self+") Missing IntelType userparam.");
-            return;
-        }
+        local type = params[0];
+        local id = params[1];
         print("Picked up "+Intel.TypeLabel(type)+" ID "+id+" ("+self+")");
         // Enable the corresponding readable pages.
         Intel.ShowID(id);
@@ -118,6 +110,16 @@ class IsIntel extends SqRootScript {
         Sound.PlaySchemaAmbient(self, "pickup_loot");
         // Merge with the glory of the fle--er, intelligence.
         Container.Add(self, frobber);
+        // Finally, read this book right away, so you don't have to click
+        // through a billion pages the first time you read anything. We also
+        // remove the Book>Text property so on inventory frobs you read the
+        // archetype's Book>Text instead.
+        local text = GetProperty("Book");
+        local art = GetProperty("BookArt");
+        Property.Remove(self, "Book");
+        if (text && art) {
+            DarkUI.ReadBook(text, art);
+        }
     }
 
     function OnFrobInvEnd() {
@@ -143,6 +145,18 @@ class IsIntel extends SqRootScript {
             SetProperty("ModelName", modelName);
         }
         UpdateName();
+    }
+
+    function ParseTypeAndID() {
+        local text = GetProperty("Book").tostring().tolower();
+        if (text.find("intel")!=0) return null;
+        local u0 = text.find("_");
+        if (u0==null) return null;
+        local u1 = text.find("_", u0+1);
+        if (u1==null) return null;
+        local id = text.slice(u0+1,u1).tointeger();
+        local type = Intel.ParseType(text.slice(u1+1));
+        return [type, id];
     }
 
     function UpdateName() {

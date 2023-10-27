@@ -3,6 +3,18 @@
 //       means we can't actually use the normal text for any readable's content,
 //       but will have to use decals for it. Not really a big deal, but perhaps
 //       a mite inconvenient.
+//
+// NOTE: We cannot use alpha transparency for either the book art or its
+//       buttons. So we either need to sacrifice some space, in every page's
+//       own art, purely for the UI in the sides or bottom edge, or we make
+//       the buttons 0 pixel size (or 1 if 0 breaks), and use additional decals
+//       per page for fake buttons. Since you never have to click the actual
+//       buttons in a book, fake button decals is probably just fine.
+//
+// TODO: This really needs a gui tool to make managing all these position
+//       variables, and writing out the two versions of each book (in the intel
+//       stack, and standalone for first pickup) without lots of tedium and
+//       copy-paste errors!
 
 // The index page has one entry for each possible readable. These will be
 // initially hidden, and revealed when that readable is found.
@@ -29,6 +41,7 @@ page_2_decal_1: "#65 $ 1 60 50 290"
 page_2_decal_1_text: "NOT DISCOVERED"
 page_2_decal_2: "#1 $ 1 60 50 290"
 page_2_decal_2_text: "Dear sirs, yours sincerely, me."
+
 
 // Readable 3, index decal 2, group 2/66:
 page_3: "3."

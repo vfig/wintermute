@@ -1,0 +1,11 @@
+// Readable 2, index decal 1, group 1/65:
+// NOTE: If the pages start at anything other than zero, the decals do not work.
+//       And technically we don't need the "NOT DISCOVERED" decal, but decals
+//       have to be in serial order, or the later ones will not show. So since
+//       we are copy-pasting here, it is easier to leave it in.
+page_0: "2."
+page_0_decal_0: "#1 0 0 0 intel/decal_corr"
+page_0_decal_1: "#65 $ 1 60 50 290"
+page_0_decal_1_text: "NOT DISCOVERED"
+page_0_decal_2: "#1 $ 1 60 50 290"
+page_0_decal_2_text: "Dear sirs, yours sincerely, me."
