@@ -6,8 +6,10 @@
 4 - Green water, Southeast slow flow.
 5 - Green water, Northeast slow flow.
 6 - Green water, Northwest slow flow.
-7 - Green water, Southwast slow flow.
-4 - Green water, Falling medium flow.
+7 - Green water, Southwest slow flow.
+8 - Green water, Falling slow flow.
+9 - Green water, East slow flow.
+10 - Green water, West slow flow.
 
 
 ## PistonHead elevators must start inactive.
