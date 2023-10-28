@@ -1,3 +1,15 @@
+## Flow Groups
+
+1 - Green water, still.
+2 - Lava, still.
+3 - Blue water, still.
+4 - Green water, Southeast slow flow.
+5 - Green water, Northeast slow flow.
+6 - Green water, Northwest slow flow.
+7 - Green water, Southwast slow flow.
+4 - Green water, Falling medium flow.
+
+
 ## PistonHead elevators must start inactive.
 
 In order to have all the pistons work at the same speed, and importantly the same acceleration/deceleration at the stroke ends, each has a pair of TerrPt markers. Two of the pistons start at the top/bottom ends of the stroke, but the other four need to start at offset positions. To achieve this, these four have an additional TerrPt that links to the main stroke markers, like this:
