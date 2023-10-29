@@ -16,37 +16,74 @@
 //       stack, and standalone for first pickup) without lots of tedium and
 //       copy-paste errors!
 
+no_trim: "1"
+
+// -------------------------------------------------------------------
 // The index page has one entry for each possible readable. These will be
 // initially hidden, and revealed when that readable is found.
+
 page_0: "This is the index."
+
 page_0_decal_0: "#0 $ 1 60 50 290"
 page_0_decal_0_text: "1. Some kind of blueprint"
+
 page_0_decal_1: "#1 $ 1 60 80 290"
 page_0_decal_1_text: "2. A crumpled letter"
+
 page_0_decal_2: "#2 $ 1 60 110 290"
 page_0_decal_2_text: "3. A tedious specification"
 
 
+// -------------------------------------------------------------------
 // Readable 1, index decal 0, group 0/64:
-page_1: "1."
-page_1_decal_0: "#0 0 0 0 intel/decal_blue"
+
+page_1: ""
+page_1_decal_0: "#0 0 0 0 art/blue_sump"
+
 page_1_decal_1: "#64 $ 1 60 50 290"
 page_1_decal_1_text: "NOT DISCOVERED"
 
+page_1_decal_2: "#0 $ 1 40 26 640"
+page_1_decal_2_text_color: "255 255 255"
+page_1_decal_2_font: "books fonts/arbutus24"
+page_1_decal_2_text: "ELECTROSOPHIC CONDENSATE POOLS"
 
+page_1_decal_3: "#0 $ 1 54 320 640"
+page_1_decal_3_text_color: "255 255 255"
+page_1_decal_3_font: "books fonts/arbutus18"
+page_1_decal_3_text: "DEBRIS/CONDENSATE SEPARATION MANIFOLD"
+
+page_1_decal_4: "#0 $ 1 440 400 150"
+page_1_decal_4_text_color: "255 255 255"
+page_1_decal_4_font: "books fonts/arbutus18"
+page_1_decal_4_text: "  SITE 3 DEBRIS AGGLOMERATION"
+
+// TODO: page number and arrows
+
+
+// -------------------------------------------------------------------
 // Readable 2, index decal 1, group 1/65:
+
 page_2: "2."
+
 page_2_decal_0: "#1 0 0 0 intel/decal_corr"
+
 page_2_decal_1: "#65 $ 1 60 50 290"
 page_2_decal_1_text: "NOT DISCOVERED"
+
 page_2_decal_2: "#1 $ 1 60 50 290"
 page_2_decal_2_text: "Dear sirs, yours sincerely, me."
 
 
+// -------------------------------------------------------------------
 // Readable 3, index decal 2, group 2/66:
+
 page_3: "3."
-page_3_decal_0: "#2 0 0 0 intel/decal_spec"
-page_3_decal_1: "#66 $ 1 60 50 290"
+
+page_3_decal_0: "#2 0 0 0 art/pbook"
+page_3_decal_1: "#66 $ 1 52 24 252"
 page_3_decal_1_text: "NOT DISCOVERED"
-page_3_decal_2: "#2 $ 1 60 50 290"
-page_3_decal_2_text: "The leg bone connected to the... skull bone."
+
+page_3_decal_2: "#2 $ 1 52 24 252"
+page_3_decal_2_font: "books fonts/mulder24"
+page_3_decal_2_text: "Hear my vow, sphinx of black quartz!\n\nHEAR MY VOW, SPHINX OF BLACK QUARTZ!!"

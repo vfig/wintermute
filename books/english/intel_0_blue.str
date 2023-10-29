@@ -3,7 +3,26 @@
 //       And technically we don't need the "NOT DISCOVERED" decal, but decals
 //       have to be in serial order, or the later ones will not show. So since
 //       we are copy-pasting here, it is easier to leave it in.
-page_0: "1."
-page_0_decal_0: "#0 0 0 0 intel/decal_blue"
+
+no_trim: "1"
+
+page_0: ""
+page_0_decal_0: "#0 0 0 0 art/blue_sump"
+
 page_0_decal_1: "#64 $ 1 60 50 290"
 page_0_decal_1_text: "NOT DISCOVERED"
+
+page_0_decal_2: "#0 $ 1 40 26 640"
+page_0_decal_2_text_color: "255 255 255"
+page_0_decal_2_font: "books fonts/arbutus24"
+page_0_decal_2_text: "ELECTROSOPHIC CONDENSATE POOLS"
+
+page_0_decal_3: "#0 $ 1 54 320 640"
+page_0_decal_3_text_color: "255 255 255"
+page_0_decal_3_font: "books fonts/arbutus18"
+page_0_decal_3_text: "DEBRIS/CONDENSATE SEPARATION MANIFOLD"
+
+page_0_decal_4: "#0 $ 1 440 400 150"
+page_0_decal_4_text_color: "255 255 255"
+page_0_decal_4_font: "books fonts/arbutus18"
+page_0_decal_4_text: "  SITE 3 DEBRIS AGGLOMERATION"

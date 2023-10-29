@@ -151,11 +151,21 @@ class IsIntel extends SqRootScript {
         local text = GetProperty("Book").tostring().tolower();
         if (text.find("intel")!=0) return null;
         local u0 = text.find("_");
-        if (u0==null) return null;
+        if (u0==null) {
+            print("ERROR: ("+self+") Book property must be \"intel_<id>_<type>[_difficulty]\".");
+            return null;
+        }
         local u1 = text.find("_", u0+1);
-        if (u1==null) return null;
+        if (u1==null) {
+            print("ERROR: ("+self+") Book property must be \"intel_<id>_<type>[_difficulty]\".");
+            return null;
+        }
+        local u2 = text.find("_", u1+1);
+        if (u2==null) {
+            u2 = text.len();
+        }
         local id = text.slice(u0+1,u1).tointeger();
-        local type = Intel.ParseType(text.slice(u1+1));
+        local type = Intel.ParseType(text.slice(u1+1,u2));
         return [type, id];
     }
 

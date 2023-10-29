@@ -3,9 +3,15 @@
 //       And technically we don't need the "NOT DISCOVERED" decal, but decals
 //       have to be in serial order, or the later ones will not show. So since
 //       we are copy-pasting here, it is easier to leave it in.
+
+no_trim: "1"
+
 page_0: "3."
-page_0_decal_0: "#2 0 0 0 intel/decal_spec"
-page_0_decal_1: "#66 $ 1 60 50 290"
+
+page_0_decal_0: "#2 0 0 0 art/pbook"
+page_0_decal_1: "#66 $ 1 52 24 252"
 page_0_decal_1_text: "NOT DISCOVERED"
-page_0_decal_2: "#2 $ 1 60 50 290"
-page_0_decal_2_text: "The leg bone connected to the... skull bone."
+
+page_0_decal_2: "#2 $ 1 52 24 252"
+page_0_decal_2_font: "books fonts/mulder24"
+page_0_decal_2_text: "Hear my vow, sphinx of black quartz!\n\nHEAR MY VOW, SPHINX OF BLACK QUARTZ!!"
