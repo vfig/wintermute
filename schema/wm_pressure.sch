@@ -9,3 +9,8 @@ archetype DEVICE_MISC
 mono_loop 0 0
 volume -500
 wslowrv2
+
+schema wm_poolflush
+archetype DEVICE_MISC
+volume 0
+poolflush
