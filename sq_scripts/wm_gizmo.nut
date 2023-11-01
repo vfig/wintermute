@@ -486,6 +486,10 @@ class ActivateAtOrigin extends SqRootScript {
         SetData("AtOrigin", atOrigin);
         SetData("AlertLevel", alertLevel);
         local active = atOrigin && (alertLevel<2);
+        local mode = GetProperty("AI_Mode");
+        if (mode==eAIMode.kAIM_Dead) {
+            active = false;
+        }
         ActivateDevices(active);
     }
 
@@ -515,18 +519,26 @@ class ActivateAtOrigin extends SqRootScript {
                 SetData("InitialOrigin", origin);
             }
             Activate();
-            SetOneShotTimer("AtOrigin?", 3.0+Data.RandFlt0to1());
+            local timer = SetOneShotTimer("AtOrigin?", 3.0+Data.RandFlt0to1());
+            SetData("Timer", timer);
         }
     }
 
     function OnTimer() {
         if (message().name=="AtOrigin?") {
             ActivateIfChanged();
-            SetOneShotTimer("AtOrigin?", 3.0);
+            local timer = SetOneShotTimer("AtOrigin?", 3.0);
+            SetData("Timer", timer);
         }
     }
 
     function OnAlertness() {
         ActivateIfChanged();
+    }
+
+    function OnSlain() {
+        local timer = GetData("Timer");
+        KillTimer(timer);
+        Activate();
     }
 }
