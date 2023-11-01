@@ -449,3 +449,84 @@ class DelayedOn extends SqRootScript {
         Link.BroadcastOnAllLinks(self, "TurnOn", "ControlDevice");
     }
 }
+
+/* Put on an AI (preferably with Idle: Returns to Origin: true). When the
+   AI is at its origin point and <= level 1 alert, it will send TurnOn along
+   ScriptParams[AtOrigin] links. When it becomes alerted or moves away from
+   its origin, it sends TurnOff.
+*/
+class ActivateAtOrigin extends SqRootScript {
+    function IsAtOrigin() {
+        // BUG: for some reason, trying to read the AI_IdleOrgn/Original Location
+        //      property here gives back an int 0 instead of the vector it should
+        //      be! so instead we store it as data on sim and just use that after.
+        local origin = GetData("InitialOrigin");
+        local pos = Object.Position(self);
+        local dist = (origin - pos).Length();
+        if (dist<3.0) {
+            // At the origin, or close enough.
+            return 1;
+        }
+        return 0;
+    }
+
+    function ActivateDevices(on) {
+        local msg = (on? "TurnOn":"TurnOff");
+        foreach (link in Link.GetAll("ScriptParams", self)) {
+            local value = LinkTools.LinkGetData(link, "").tostring().tolower();
+            if (value=="atorigin") {
+                PostMessage(LinkDest(link), msg);
+            }
+        }
+    }
+
+    function Activate() {
+        local atOrigin = IsAtOrigin();
+        local alertLevel = AI.GetAlertLevel(self);
+        SetData("AtOrigin", atOrigin);
+        SetData("AlertLevel", alertLevel);
+        local active = atOrigin && (alertLevel<2);
+        ActivateDevices(active);
+    }
+
+    function ActivateIfChanged() {
+        local atOrigin = IsAtOrigin();
+        local alertLevel = AI.GetAlertLevel(self);
+        local prevAlertLevel = GetData("AlertLevel");
+        local prevAtOrigin = GetData("AtOrigin");
+        if (prevAlertLevel!=alertLevel
+        || prevAtOrigin!=atOrigin) {
+            Activate();
+        }
+    }
+
+    function OnSim() {
+        if (message().starting) {
+            if (! HasProperty("AI_IdleOrgn")) {
+                local pos = Object.Position(self);
+                local fac = Object.Facing(self);
+                Property.Add(self, "AI_IdleOrgn");
+                Property.Set(self, "AI_IdleOrgn", "Original Facing", fac.z);
+                Property.Set(self, "AI_IdleOrgn", "Original Location", pos);
+                SetData("InitialOrigin", pos);
+            } else {
+                local pos = Object.Position(self);
+                local origin = Property.Get(self, "AI_IdleOrgn", "Original Location");
+                SetData("InitialOrigin", origin);
+            }
+            Activate();
+            SetOneShotTimer("AtOrigin?", 3.0+Data.RandFlt0to1());
+        }
+    }
+
+    function OnTimer() {
+        if (message().name=="AtOrigin?") {
+            ActivateIfChanged();
+            SetOneShotTimer("AtOrigin?", 3.0);
+        }
+    }
+
+    function OnAlertness() {
+        ActivateIfChanged();
+    }
+}
