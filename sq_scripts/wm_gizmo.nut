@@ -542,3 +542,90 @@ class ActivateAtOrigin extends SqRootScript {
         Activate();
     }
 }
+
+class DumbwaiterDoor extends SqRootScript {
+    function TurnOffLever() {
+        Link.BroadcastOnAllLinks(self, "TurnOff", "~ControlDevice");
+    }
+
+    function ActivateDevices(on) {
+        local msg = (on? "TurnOn":"TurnOff");
+        Link.BroadcastOnAllLinks(self, msg, "ControlDevice");
+    }
+
+    function StopTimer() {
+        if (IsDataSet("Timer")) {
+            KillTimer(GetData("Timer"));
+            ClearData("Timer");
+        }
+    }
+
+    function Reset() {
+        TurnOffLever();
+        ActivateDevices(false);
+        SetData("Step", 0);
+        StopTimer();
+        SendMessage(self, "Open");
+    }
+
+    function NextStep() {
+        local step = GetData("Step");
+        if (step==0) {
+            // Close door, wait for it.
+            SendMessage(self, "Close");
+            SetData("Step", step+1);
+        } else if (step==1) {
+            // Door closed, start timer.
+            StopTimer();
+            local timer = SetOneShotTimer("DumbwaiterDone", 5.0);
+            SetData("Timer", timer);
+            ActivateDevices(true);
+            SetData("Step", step+1);
+        } else if (step==2) {
+            // Timer done, wait a moment before opening.
+            StopTimer();
+            local timer = SetOneShotTimer("DumbwaiterOpen", 1.0);
+            SetData("Timer", timer);
+            ActivateDevices(false);
+            SetData("Step", step+1);
+        } else if (step==3) {
+            // Timer done, open door.
+            Reset();
+        }
+    }
+
+    function OnSim() {
+        if (message().starting) {
+            Reset();
+        }
+    }
+
+    function OnTurnOn() {
+        // Prevent StdDoor from thinking it should open.
+        BlockMessage();
+        // Ignore if we are already on.
+        if (GetData("Step")!=0) return;
+        NextStep();
+    }
+
+    function OnDoorClose() {
+        NextStep();
+    }
+
+    function OnTimer() {
+        if (message().name=="DumbwaiterDone"
+        || message().name=="DumbwaiterOpen") {
+            NextStep();
+        }
+    }
+
+    function OnTurnOff() {
+        // Prevent StdDoor from thinking it should close.
+        BlockMessage();
+        // Ignore if we are already waiting to open the door.
+        if (GetData("Step")==3) return;
+        local isOpen = (Door.GetDoorState(self)==eDoorStatus.kDoorOpen);
+        SetData("Step", (isOpen? 3 : 2));
+        NextStep();
+    }
+}
