@@ -23,6 +23,7 @@ Region    Area    Key ID    Description
 8 - Green water, Falling slow flow.
 9 - Green water, East slow flow.
 10 - Green water, West slow flow.
+11 - Green water, South slow flow.
 
 
 ## PistonHead elevators must start inactive.
