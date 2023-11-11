@@ -146,6 +146,7 @@ concept c1503 4	//"Name of the Master Builder, what can Lord .."
 concept c1504 4	//"With mine own eyes, I saw it!..."
 concept c1505 4	//"Any luck on thy hunting, friend?"
 
+concept wmc100 4 //"What is in the box?"
 
 //-----------TAGS----------//
 
