@@ -1,6 +1,7 @@
 //wmc100 - the bomb.
 schema wmc101       // A: What is in the box?
 archetype AI_CONV
+delay 5000
 wmc101
 schema_voice vmech4 1 wmc100  (LineNo 1 1)
 
@@ -29,22 +30,29 @@ archetype AI_CONV
 wmc106
 schema_voice vmech1 1 wmc100  (LineNo 6 6)
 
-schema wmc107       // B: Then openest it thyself.
+schema wmc107       // B: If that is what thou thinkest...
 archetype AI_CONV
+delay 4000
 wmc107
 schema_voice vmech1 1 wmc100  (LineNo 7 7)
 
-schema wmc108       // A: Very well, I shall!
+schema wmc108       // B: Then openest it thyself.
 archetype AI_CONV
 wmc108
-schema_voice vmech4 1 wmc100  (LineNo 8 8)
+schema_voice vmech1 1 wmc100  (LineNo 8 8)
 
-schema wmc109       // A: Oh, just remembered--I am needed...
+schema wmc109       // A: Very well, I shall!
 archetype AI_CONV
 wmc109
 schema_voice vmech4 1 wmc100  (LineNo 9 9)
 
-schema wmc110       // B: Taffer.
+schema wmc110       // A: Oh, just remembered--I am needed...
 archetype AI_CONV
+delay 2000
 wmc110
-schema_voice vmech1 1 wmc100  (LineNo 10 10)
+schema_voice vmech4 1 wmc100  (LineNo 10 10)
+
+schema wmc111       // B: Taffer.
+archetype AI_CONV
+wmc111
+schema_voice vmech1 1 wmc100  (LineNo 11 11)
