@@ -642,3 +642,10 @@ class TrainSounds extends SqRootScript {
         SetData("ElevSpeed", 0.0);
     }
 }
+
+// Put on a TerrPt to send TurnOn when the elevator reaches it.
+class TrigTerrPoint extends SqRootScript {
+    function OnWaypointReached() {
+        Link.BroadcastOnAllLinks(self, "TurnOn", "ControlDevice");
+    }
+}
