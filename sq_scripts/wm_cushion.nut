@@ -55,3 +55,61 @@ class CushionStimResponse extends SqRootScript {
         }
     }
 }
+
+/* When picked up by the player, swaps itself out for a different object.
+   Looks for a Transmute link (from itself or archetypes) to an archetype
+   to turn into. Stack Count is preserved. (In other words, like the stock
+   Crystal script, except without hardcoded archetypes.)
+*/
+class InventorySwap extends SqRootScript {
+    function GetArchetype() {
+        foreach (link in Link.GetAllInheritedSingle("Transmute", self)) {
+            return LinkDest(link);
+        }
+        return 0;
+    }
+
+    function Transmogrify(container) {
+        local arch = GetArchetype();
+        if (! arch) return;
+        local obj = Object.Create(arch);
+        if (HasProperty("StackCount")) {
+            local count = GetProperty("StackCount");
+            Property.SetSimple(obj, "StackCount", count);
+        }
+        Container.Add(obj, container);
+    }
+
+    function OnContained() {
+        if (message().event!=eContainsEvent.kContainRemove
+        && message().container==Object.Named("Player")) {
+            Transmogrify(message().container);
+            Object.Destroy(self);
+        }
+    }
+}
+
+/* Like MossSpore, only it ignores collisions with the player. */
+class MudBall extends SqRootScript {
+    function OnBeginScript() {
+        Physics.SubscribeMsg(self, ePhysScriptMsgType.kCollisionMsg);
+    }
+
+    function OnEndScript() {
+        Physics.UnsubscribeMsg(self, ePhysScriptMsgType.kCollisionMsg);
+    }
+
+    function OnPhysCollision() {
+        if (message().collObj==Object.Named("Player")) {
+            Reply(ePhysMessageResult.kPM_Nothing);
+        } else {
+            local normal = message().collNormal;
+            // Slay if we hit a surface thats within 45 degrees of vertical,
+            // facing up; otherwise Destroy.
+            if (normal.z<0.707) {
+                Property.SetSimple(self, "SlayResult", eSlayResult.kSlayDestroy);
+            }
+            Reply(ePhysMessageResult.kPM_Slay);
+        }
+    }
+}
