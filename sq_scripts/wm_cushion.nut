@@ -1,36 +1,40 @@
-/*
-    Stim-based approach doesnt work for small radiuses, because the
-    player body will not receive the stim before the feet hit the floor!
-
-    Although radius 4 seems to work okay, and is not too big to attach
-    to mudlumps?
-
-    a landing sound gets tags:
-        Event Footstep,Landing true
-
-    for temporary i have these tags on M-Cushioned:
-        CreatureType Player,Fungus true
-
-    but if we want to have mud (Fungus true tag, because of the prox: fungus stuff)
-    separate from plants (SpringGreen arrow fired into earth patches), then
-    we want something different on M-Cushioned, so we can have undergrowth
-    noises on landing?
-*/
-
 class CushionStimResponse extends SqRootScript {
     ExpireAfter = 0.1
 
     function OnBeginScript() {
         if (! IsDataSet("LastStim")) SetData("LastStim", 0.0);
         if (! IsDataSet("ExpiryActive")) SetData("ExpiryActive", 0);
+        if (! IsDataSet("Cushioned")) SetData("Cushioned", 0);
     }
 
     function OnCushionStimStimulus() {
-        if (! Object.HasMetaProperty(self, "M-Cushioned")) {
-            print("++ add cushioned");
-            Object.AddMetaProperty(self, "M-Cushioned");
+        local now = GetTime();
+        local lastStim = GetData("LastStim");
+        if (now==lastStim) return;
+        SetData("LastStim", now);
+        // Add the appropriate metaprop according to velocity.
+        local vel = vector();
+        Physics.GetVelocity(self, vel);
+        local isBig = (vel.z<=-30.0); // Big fall (would normally cause fall damage)
+        local cushioned = GetData("Cushioned");
+        if (isBig && cushioned!=2) {
+            SetData("Cushioned", 2);
+            if (! Object.HasMetaProperty(self, "M-CushionedBig")) {
+                Object.AddMetaProperty(self, "M-CushionedBig");
+            }
+            if (Object.HasMetaProperty(self, "M-Cushioned")) {
+                Object.RemoveMetaProperty(self, "M-Cushioned");
+            }
+        } else if (!isBig && cushioned!=1) {
+            SetData("Cushioned", 1);
+            if (! Object.HasMetaProperty(self, "M-Cushioned")) {
+                Object.AddMetaProperty(self, "M-Cushioned");
+            }
+            if (Object.HasMetaProperty(self, "M-CushionedBig")) {
+                Object.RemoveMetaProperty(self, "M-CushionedBig");
+            }
         }
-        SetData("LastStim", GetTime());
+        // Start the expiry check (if its not running).
         local isActive = GetData("ExpiryActive");
         if (! isActive) {
             SetData("ExpiryActive", 1);
@@ -42,8 +46,9 @@ class CushionStimResponse extends SqRootScript {
         local now = GetTime();
         local lastStim = GetData("LastStim");
         if ((now-lastStim)>=ExpireAfter) {
-            print("-- remove cushioned");
+            SetData("Cushioned", 0);
             Object.RemoveMetaProperty(self, "M-Cushioned");
+            Object.RemoveMetaProperty(self, "M-CushionedBig");
             SetData("ExpiryActive", 0);
         } else {
             PostMessage(self, "CushionExpiry");
