@@ -4,7 +4,6 @@ class CushionStimResponse extends SqRootScript {
     function OnBeginScript() {
         if (! IsDataSet("LastStim")) SetData("LastStim", 0.0);
         if (! IsDataSet("ExpiryActive")) SetData("ExpiryActive", 0);
-        if (! IsDataSet("Cushioned")) SetData("Cushioned", 0);
     }
 
     function OnCushionStimStimulus() {
@@ -12,24 +11,20 @@ class CushionStimResponse extends SqRootScript {
         local lastStim = GetData("LastStim");
         if (now==lastStim) return;
         SetData("LastStim", now);
-        // Add the appropriate metaprop according to velocity.
+        // Add the appropriate metaprops according to velocity.
         local vel = vector();
         Physics.GetVelocity(self, vel);
         local isBig = (vel.z<=-30.0); // Big fall (would normally cause fall damage)
-        local cushioned = GetData("Cushioned");
-        if (isBig && cushioned!=2) {
-            SetData("Cushioned", 2);
+        // We are always cushioned, ...
+        if (! Object.HasMetaProperty(self, "M-Cushioned")) {
+            Object.AddMetaProperty(self, "M-Cushioned");
+        }
+        // ...but at high velocity we want the big landing sound:
+        if (isBig) {
             if (! Object.HasMetaProperty(self, "M-CushionedBig")) {
                 Object.AddMetaProperty(self, "M-CushionedBig");
             }
-            if (Object.HasMetaProperty(self, "M-Cushioned")) {
-                Object.RemoveMetaProperty(self, "M-Cushioned");
-            }
-        } else if (!isBig && cushioned!=1) {
-            SetData("Cushioned", 1);
-            if (! Object.HasMetaProperty(self, "M-Cushioned")) {
-                Object.AddMetaProperty(self, "M-Cushioned");
-            }
+        } else {
             if (Object.HasMetaProperty(self, "M-CushionedBig")) {
                 Object.RemoveMetaProperty(self, "M-CushionedBig");
             }
@@ -46,7 +41,6 @@ class CushionStimResponse extends SqRootScript {
         local now = GetTime();
         local lastStim = GetData("LastStim");
         if ((now-lastStim)>=ExpireAfter) {
-            SetData("Cushioned", 0);
             Object.RemoveMetaProperty(self, "M-Cushioned");
             Object.RemoveMetaProperty(self, "M-CushionedBig");
             SetData("ExpiryActive", 0);
@@ -100,7 +94,10 @@ class MudBall extends SqRootScript {
     }
 
     function OnPhysCollision() {
-        if (message().collObj==Object.Named("Player")) {
+        local other = message().collObj;
+        if (other==Object.Named("Player")
+        || Object.InheritsFrom(other, "mudcarpet")) {
+            // Don't collide.
             Reply(ePhysMessageResult.kPM_Nothing);
         } else {
             local normal = message().collNormal;
@@ -111,5 +108,46 @@ class MudBall extends SqRootScript {
             }
             Reply(ePhysMessageResult.kPM_Slay);
         }
+    }
+}
+
+class GreenFingers extends SqRootScript {
+    function OnBeginScript() {
+        if (! IsDataSet("HasGrown")) SetData("HasGrown", 0);
+    }
+
+    function OnBeginGrowthStimStimulus() {
+        if (! GetData("HasGrown")) {
+            SetData("HasGrown", 1);
+            Grow("GrowVinePatch", 0.0);
+            GrowRandom();
+        }
+    }
+
+    function OnGrowthStimStimulus() {
+        if (! GetData("HasGrown")) {
+            SetData("HasGrown", 1);
+            GrowRandom();
+        }
+    }
+
+    function GrowRandom() {
+        local archs = [];
+        foreach (link in Link.GetAllInheritedSingle("Transmute", self)) {
+            archs.append(LinkDest(link));
+        }
+        if (archs.len()==0) return;
+        local choice = Data.RandInt(0, archs.len()-1);
+        Grow(archs[choice], 1.5);
+    }
+
+    function Grow(arch, offsetScale) {
+        local offset = vector();
+        offset.x = offsetScale*Data.RandFltNeg1to1();
+        offset.y = offsetScale*Data.RandFltNeg1to1();
+        local facing = vector();
+        facing.z = 360.0*Data.RandFlt0to1();
+        local obj = Object.Create(arch);
+        Object.Teleport(obj, offset, facing, self);
     }
 }
