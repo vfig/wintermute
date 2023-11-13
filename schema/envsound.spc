@@ -14,7 +14,8 @@ env_tag_required Event
 
 //-------------------------------------------------------
 //FOOTSTEP & COLLISION EVENT TAGS
-tag Fungus true false 		//on fungus? like from a Moss Arrow?  
+tag Fungus true false 		//on fungus? like from a Moss Arrow?
+tag Plants true false       //in plants, like from a Mud+Spring Arrow.
 tag Landing true false		//Landing from a jump?
 
 //-------------------------------------------------------

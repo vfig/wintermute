@@ -390,11 +390,11 @@ volume -2500
 stroke1 stroke2 stroke3
 env_tag (Event Footstep) (MediaLevel Head) (Material Liquid)
 
-//MOSS ARROW FUNGUS
-schema foot_fungus
+//MUD ARROW... MUD
+schema foot_mud
 archetype FOOT_PLAYER
 volume -2000  //was -2600
-ft_fung1 ft_fung2 ft_fung3 ft_fung4
+ft_mud1 ft_mud2 ft_mud3 ft_mud4
 env_tag (Event Footstep) (Fungus True) (CreatureType Apparition Ape Burrick Frog) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
 env_tag (Event Footstep) (Fungus True) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
 env_tag (Event Footstep) (Fungus True) (CreatureType Apparition Ape Burrick Frog) (Material Tile Wood Vegetation)
@@ -407,7 +407,51 @@ env_tag (Event Collision) (Fungus True) (Material Carpet Ceramic Earth Flesh Gla
 env_tag (Event Collision) (Fungus True) (Material Carpet Ceramic Earth Flesh Glass Gravel Ice Metal) (Material2 MetGrate MetLadder Rope Stone Tile Vegetation Wood WoodLadder)
 env_tag (Event Collision) (Fungus True) (Material MetGrate MetLadder Rope Stone Tile Vegetation Wood WoodLadder) (Material2 MetGrate MetLadder Rope Stone Tile Vegetation Wood WoodLadder ZombiePart)
 
+//MUD+SPRING ARROW PLANTS
+schema foot_plants
+archetype FOOT_PLAYER
+volume -1600
+ft_plants1 ft_plants2 ft_plants3 ft_plants4
+env_tag (Event Footstep) (Plants True) (CreatureType Apparition Ape Burrick Frog) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
+env_tag (Event Footstep) (Plants True) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
+env_tag (Event Footstep) (Plants True) (CreatureType Apparition Ape Burrick Frog) (Material Tile Wood Vegetation)
+env_tag (Event Footstep) (Plants True) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Tile Wood Vegetation)
+env_tag (Event Collision) (Plants True) (Material Carpet Ceramic Earth Flesh Glass Gravel Ice Metal) (Material2 Carpet Ceramic Earth Flesh Glass Gravel Ice Metal)
+env_tag (Event Collision) (Plants True) (Material Carpet Ceramic Earth Flesh Glass Gravel Ice Metal) (Material2 MetGrate MetLadder Rope Stone Tile Vegetation Wood WoodLadder)
+env_tag (Event Collision) (Plants True) (Material MetGrate MetLadder Rope Stone Tile Vegetation Wood WoodLadder) (Material2 MetGrate MetLadder Rope Stone Tile Vegetation Wood WoodLadder ZombiePart)
+env_tag (Event Footstep) (Plants True) (Fungus True) (CreatureType Apparition Ape Burrick Frog) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
+env_tag (Event Footstep) (Plants True) (Fungus True) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
+env_tag (Event Footstep) (Plants True) (Fungus True) (CreatureType Apparition Ape Burrick Frog) (Material Tile Wood Vegetation)
+env_tag (Event Footstep) (Plants True) (Fungus True) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Tile Wood Vegetation)
+env_tag (Event Collision) (Plants True) (Fungus True) (Material Carpet Ceramic Earth Flesh Glass Gravel Ice Metal) (Material2 Carpet Ceramic Earth Flesh Glass Gravel Ice Metal)
+env_tag (Event Collision) (Plants True) (Fungus True) (Material Carpet Ceramic Earth Flesh Glass Gravel Ice Metal) (Material2 MetGrate MetLadder Rope Stone Tile Vegetation Wood WoodLadder)
+env_tag (Event Collision) (Plants True) (Fungus True) (Material MetGrate MetLadder Rope Stone Tile Vegetation Wood WoodLadder) (Material2 MetGrate MetLadder Rope Stone Tile Vegetation Wood WoodLadder ZombiePart)
 
+schema land_plants
+archetype LAND_PLAYER
+volume -1000
+ft_plants_j
+env_tag (Event Footstep) (Plants True) (Landing True) (CreatureType Apparition Ape Burrick Frog) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
+env_tag (Event Footstep) (Plants True) (Landing True) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
+env_tag (Event Footstep) (Plants True) (Landing True) (CreatureType Apparition Ape Burrick Frog) (Material Tile Wood Vegetation)
+env_tag (Event Footstep) (Plants True) (Landing True) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Tile Wood Vegetation)
+env_tag (Event Footstep) (Plants True) (Fungus True) (Landing True) (CreatureType Apparition Ape Burrick Frog) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
+env_tag (Event Footstep) (Plants True) (Fungus True) (Landing True) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
+env_tag (Event Footstep) (Plants True) (Fungus True) (Landing True) (CreatureType Apparition Ape Burrick Frog) (Material Tile Wood Vegetation)
+env_tag (Event Footstep) (Plants True) (Fungus True) (Landing True) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Tile Wood Vegetation)
+
+schema land_plants_big
+archetype FOOT_PLAYER
+volume -600
+ft_plants_j2
+env_tag (Event Footstep) (Plants True) (Landing True) (Speed 10 99) (CreatureType Apparition Ape Burrick Frog) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
+env_tag (Event Footstep) (Plants True) (Landing True) (Speed 10 99) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
+env_tag (Event Footstep) (Plants True) (Landing True) (Speed 10 99) (CreatureType Apparition Ape Burrick Frog) (Material Tile Wood Vegetation)
+env_tag (Event Footstep) (Plants True) (Landing True) (Speed 10 99) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Tile Wood Vegetation)
+env_tag (Event Footstep) (Plants True) (Fungus True) (Landing True) (Speed 10 99) (CreatureType Apparition Ape Burrick Frog) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
+env_tag (Event Footstep) (Plants True) (Fungus True) (Landing True) (Speed 10 99) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Carpet Ceramic Earth Glass Gravel Metal MetGrate Stone)
+env_tag (Event Footstep) (Plants True) (Fungus True) (Landing True) (Speed 10 99) (CreatureType Apparition Ape Burrick Frog) (Material Tile Wood Vegetation)
+env_tag (Event Footstep) (Plants True) (Fungus True) (Landing True) (Speed 10 99) (CreatureType Guard Haunt Player Servant Spider Zombie) (Material Tile Wood Vegetation)
 
 //CLIMBING A ROPE
 schema climb_rope
