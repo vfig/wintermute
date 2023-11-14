@@ -145,9 +145,15 @@ class GreenFingers extends SqRootScript {
         local offset = vector();
         offset.x = offsetScale*Data.RandFltNeg1to1();
         offset.y = offsetScale*Data.RandFltNeg1to1();
-        local facing = vector();
-        facing.z = 360.0*Data.RandFlt0to1();
+        local pos = Object.ObjectToWorld(self, offset);
+        local facing = Object.Facing(self);
+        // Randomize the heading, but only if we are pretty upright.
+        local up = Object.ObjectToWorld(self, vector(0.0,0.0,1.0));
+        up.Normalize();
+        if (up.z>0.95) {
+            facing.z = 360.0*Data.RandFlt0to1();
+        }
         local obj = Object.Create(arch);
-        Object.Teleport(obj, offset, facing, self);
+        Object.Teleport(obj, pos, facing);
     }
 }
