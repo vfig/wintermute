@@ -3,13 +3,14 @@
 Region    Area    Key ID    Description
 ------    ----    ------    -----------
      1    Site 0
-    10    Site 1    1       Orange key; sump flush button.
+    10    Site 1    1       Orange key; sump flush button. (does this need a key?)
    100    Site 2
   1000    Site 3
  10000    Vault     1       Metal gear; vault locking bar.
                     2       Silver gear; vault locking bar.
                     3       Bronze gear; vault locking bar.
                     4       Blue gear; vault locking bar.
+100000    Cameras   1       Red key; security cameras.
 
 ## Flow Groups
 
