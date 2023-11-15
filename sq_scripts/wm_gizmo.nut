@@ -1,3 +1,11 @@
+class StartsOn  extends SqRootScript {
+    function OnSim() {
+        if (message().starting) {
+            SendMessage(self, "TurnOn");
+        }
+    }
+}
+
 class StartMovingTerrain extends SqRootScript {
     // Summon elevaor to its 'next' TerrPt when the mission starts.
     function OnSim() {
@@ -627,5 +635,18 @@ class DumbwaiterDoor extends SqRootScript {
         local isOpen = (Door.GetDoorState(self)==eDoorStatus.kDoorOpen);
         SetData("Step", (isOpen? 3 : 2));
         NextStep();
+    }
+}
+
+// On TurnOn, activates tweqs forward; on TurnOff, activates them in reverse.
+class TweqToggle extends SqRootScript {
+    function OnTurnOn() {
+        ActReact.React("tweq_control", 1.0, self, 0,
+            eTweqType.kTweqTypeAll, eTweqDo.kTweqDoForward);
+    }
+
+    function OnTurnOff() {
+        ActReact.React("tweq_control", 1.0, self, 0,
+            eTweqType.kTweqTypeAll, eTweqDo.kTweqDoReverse);
     }
 }
