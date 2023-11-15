@@ -124,3 +124,39 @@ archetype DEVICE_LIFT
 volume -750
 elev1st
 env_tag (Event Deactivate) (ElevType WorkerTrain)
+
+// Big power room generally
+schema wm_powerrm
+archetype DEVICE_MISC
+mono_loop 0 0
+volume -1000
+machlg03
+
+// Big pistons in power room
+schema wm_pistonlp
+archetype DEVICE_MISC
+mono_loop 0 0
+delay 0
+volume -500
+machlg08lp
+
+schema wm_pistonlp2
+archetype DEVICE_MISC
+mono_loop 0 0
+delay 500
+volume -500
+machlg08lp
+
+// Alternating piston things in power room
+schema wm_piston1
+archetype DEVICE_MISC
+mono_loop 0 0
+volume -500
+machlg07
+
+schema wm_piston2
+archetype DEVICE_MISC
+mono_loop 0 0
+delay 700
+volume -500
+machlg07
