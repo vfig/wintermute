@@ -232,28 +232,38 @@ env_tag (Event MediaTrans) (MedTransDir Enter) (CreatureType Rat) (Material Carp
 
 //SPRINGVINE ARROW HITS
 
-schema springarrow_hit
+// NOTE: seems to be a limit on how many tags i can specify in one line, so
+//       materials are split onto two lines here.
+schema sprarrow_bounce
+archetype HIT_PROJECTILE
+no_repeat
+volume -1
+hstoear hstoear2
+env_tag (Event Collision) (ArrowType SpringVine) (Landing true) (Material Carpet Ceramic Earth Glass Gravel Metal)
+env_tag (Event Collision) (ArrowType SpringVine) (Landing true) (Material MetGrate Stone Tile Vegetation Wood)
+
+schema sprarrow_hit
 archetype HIT_PROJECTILE
 no_repeat
 volume -1
 hstoear hstoear2
 env_tag (Event Collision) (ArrowType SpringVine) (Material Ceramic Glass Gravel Metal Stone Tile)
 
-schema springarrow_wood       // SPRINGVINE ARROW STICKS TO WOOD
+schema sprarrow_wood       // SPRINGVINE ARROW STICKS TO WOOD
 archetype HIT_PROJECTILE
 volume -1
 no_repeat
 ar_rope1 ar_rope2
 env_tag (Event Collision) (ArrowType SpringVine) (Material Wood)
 
-schema springarrow_grate      // SPRINGVINE ARROWS STICK TO METAL GRATES
+schema sprarrow_grate      // SPRINGVINE ARROWS STICK TO METAL GRATES
 archetype HIT_PROJECTILE
 volume -1
 no_repeat
 ar_vine1 ar_vine2
 env_tag (Event Collision) (ArrowType SpringVine) (Material MetGrate)
 
-schema springarrow_soft       // SPRINGVINE ARROWS STICK TO EARTH, ETC.
+schema sprarrow_soft       // SPRINGVINE ARROWS STICK TO EARTH, ETC.
 archetype HIT_PROJECTILE
 volume -1
 no_repeat

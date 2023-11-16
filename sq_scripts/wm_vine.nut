@@ -39,8 +39,41 @@ class SpringVine extends SqRootScript {
         return true;
     }
 
+    function CanGrowUpFrom(targ) {
+        if (targ==0) return false;
+        if (! CanAttachToSurface(targ)) return false;
+        if (Object.InheritsFrom(targ, "EarthTex")
+        || Object.InheritsFrom(targ, "VegetationTex"))
+            return true;
+        return false;
+    }
+
+    function HasConcreteInRange(archName, maxDistance) {
+        local selfPos = Object.Position(self);
+        local arch = Object.Named(archName);
+        if (arch==0) return false;
+        print("Concretes of "+archName+":");
+        foreach (link in Link.GetAll("~MetaProp", arch)) {
+            local obj = LinkDest(link);
+            local objPos = Object.Position(obj);
+            local dist = (selfPos-objPos).Length();
+            print("  "+obj+" distance "+dist);
+            if (dist<=maxDistance) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function IsNearEarthLump() {
+        if (HasConcreteInRange("MudLump1", 7.5)) return true;
+        if (HasConcreteInRange("PlantLump1", 7.5)) return true;
+        return false;
+    }
+
     function OnBeginScript() {
         Physics.SubscribeMsg(self, ePhysScriptMsgType.kCollisionMsg);
+        SetData("FirstBounce", 1);
     }
 
     function OnEndScript() {
@@ -50,13 +83,39 @@ class SpringVine extends SqRootScript {
     function OnPhysCollision() {
         local WhatIHit = message().collObj;
         local attach = CanAttachTo(WhatIHit);
+        local isFloor = (message().collNormal.z>=0.707);
+        local isUp = false;
+        if (isFloor) {
+            if (IsNearEarthLump()) {
+                attach = true;
+                isUp = true;
+            } else {
+                isUp = CanGrowUpFrom(WhatIHit);
+            }
+        }
+        if (GetData("FirstBounce")==1) {
+            print("First bounce");
+            SetData("FirstBounce", 0);
+            if (! Object.HasMetaProperty(self, "M-SpringVineBounce")) {
+                print("Adding M-SpringVineBounce");
+                Object.AddMetaProperty(self, "M-SpringVineBounce");
+            }
+        } else {
+            print("Subsequent bounce, no attach");
+            attach = false;
+        }
+        print("Collision:"
+            +" floor? "+isFloor
+            +" attach? "+attach
+            +" isUp? "+isUp
+            +" n.z: "+message().collNormal.z);
         if (attach) {
             if (!Property.Possessed(self, "StackCount")) {
                 Property.Add(self, "StackCount");
                 Property.Set(self, "StackCount", 1);
             }
-
-            local MyRope = Object.BeginCreate("VineArrowVine");
+            local RopeArch = isUp? "VineArrowUpVine":"VineArrowVine";
+            local MyRope = Object.BeginCreate(RopeArch);
             Link.Create("Owns", self, MyRope);
             Object.Teleport(MyRope, vector(-1.0,0,0), vector(0,0,0), self);
             Property.Set(MyRope, "SuspObj", "Is Suspicious", true);
@@ -84,6 +143,11 @@ class SpringVine extends SqRootScript {
                 Damage.Slay(attachment, self);
                 ownlinks.NextLink();
             }
+        }
+        SetData("FirstBounce", 1);
+        if (Object.HasMetaProperty(self, "M-SpringVineBounce")) {
+            print("Removing M-SpringVineBounce");
+            Object.RemoveMetaProperty(self, "M-SpringVineBounce");
         }
     }
 }
