@@ -52,12 +52,10 @@ class SpringVine extends SqRootScript {
         local selfPos = Object.Position(self);
         local arch = Object.Named(archName);
         if (arch==0) return false;
-        print("Concretes of "+archName+":");
         foreach (link in Link.GetAll("~MetaProp", arch)) {
             local obj = LinkDest(link);
             local objPos = Object.Position(obj);
             local dist = (selfPos-objPos).Length();
-            print("  "+obj+" distance "+dist);
             if (dist<=maxDistance) {
                 return true;
             }
@@ -94,21 +92,13 @@ class SpringVine extends SqRootScript {
             }
         }
         if (GetData("FirstBounce")==1) {
-            print("First bounce");
             SetData("FirstBounce", 0);
             if (! Object.HasMetaProperty(self, "M-SpringVineBounce")) {
-                print("Adding M-SpringVineBounce");
                 Object.AddMetaProperty(self, "M-SpringVineBounce");
             }
         } else {
-            print("Subsequent bounce, no attach");
             attach = false;
         }
-        print("Collision:"
-            +" floor? "+isFloor
-            +" attach? "+attach
-            +" isUp? "+isUp
-            +" n.z: "+message().collNormal.z);
         if (attach) {
             if (!Property.Possessed(self, "StackCount")) {
                 Property.Add(self, "StackCount");
@@ -146,7 +136,6 @@ class SpringVine extends SqRootScript {
         }
         SetData("FirstBounce", 1);
         if (Object.HasMetaProperty(self, "M-SpringVineBounce")) {
-            print("Removing M-SpringVineBounce");
             Object.RemoveMetaProperty(self, "M-SpringVineBounce");
         }
     }
