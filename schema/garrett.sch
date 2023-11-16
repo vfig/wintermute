@@ -168,6 +168,7 @@ archetype PLYR_DAMAGE
 volume -1
 no_repeat
 ghmagic1 ghmagic2 ghmagic3
+env_tag (Event Damage) (DamageType Zap) (Damage 1 100) (Health 1 100) (CreatureType Player) (Material Metal)
 env_tag (Event Damage) (DamageType Zap) (Damage 1 100) (Health 1 100) (CreatureType Player) (ArrowType MagicMissile)
 
 //TAKING FIREBOLT DAMAGE
