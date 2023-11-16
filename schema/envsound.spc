@@ -90,7 +90,7 @@ tag ObjType StdKey RubyEye ShipsWheelPeg Cuckoo
 // in pounds
 tag_int Weight
 
-tag ArrowType Broadhead Earth Fire Gas HolyWater Noisemaker Rope Vine Water Burp Firebolt MagicMissile HammerSpell GhostShot Web FrogShot BugShot Cannonball Sawblade BlowDart 
+tag ArrowType Broadhead Earth Fire Gas HolyWater Noisemaker Rope Vine SpringVine Water Burp Firebolt MagicMissile HammerSpell GhostShot Web FrogShot BugShot Cannonball Sawblade BlowDart 
 
 tag MiscProjType Steampuff 
 

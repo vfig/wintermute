@@ -169,20 +169,20 @@ env_tag (Event Collision) (Material Snow Stone Tile Vegetation Wood) (Material2 
 schema arrow_armor
 archetype HIT_PROJECTILE
 ar_armr1 ar_armr2
-env_tag (Event Collision) (CreatureType Crayman Guard GuardNoKO Haunt) (ArrowType Broadhead Rope Vine) 
+env_tag (Event Collision) (CreatureType Crayman Guard GuardNoKO Haunt) (ArrowType Broadhead Rope Vine SpringVine)
 
 //Hitting unarmored person
 schema arrow_body
 archetype HIT_PROJECTILE
 ar_body1 ar_body2
-env_tag (Event Collision) (CreatureType Ape Apparition Burrick Frog Rat Servant Spider Zombie) (ArrowType Broadhead Rope Vine) 
+env_tag (Event Collision) (CreatureType Ape Apparition Burrick Frog Rat Servant Spider Zombie) (ArrowType Broadhead Rope Vine SpringVine)
 
 schema arrow_rock
 archetype HIT_PROJECTILE
 no_repeat
 volume -1
 ar_rock1 ar_rock2 ar_rock3 ar_rock4 ar_rock5
-env_tag (Event Collision) (ArrowType Broadhead Rope Vine) (Material Gravel Stone Tile) 
+env_tag (Event Collision) (ArrowType Broadhead Rope Vine) (Material Gravel Stone Tile)
 
 schema arrow_wood
 archetype HIT_PROJECTILE
@@ -227,9 +227,38 @@ env_tag (Event Collision) (ArrowType Broadhead Rope Vine) (Material Ceramic Glas
 schema arrow_water
 archetype HIT_PROJECTILE
 splash03
-env_tag (Event MediaTrans) (MedTransDir Enter) (ArrowType Blowdart Broadhead Rope Vine) (Material Liquid) 
+env_tag (Event MediaTrans) (MedTransDir Enter) (ArrowType Blowdart Broadhead Rope Vine SpringVine) (Material Liquid) 
 env_tag (Event MediaTrans) (MedTransDir Enter) (CreatureType Rat) (Material Carpet) (Material2 Liquid) 
 
+//SPRINGVINE ARROW HITS
+
+schema springarrow_hit
+archetype HIT_PROJECTILE
+no_repeat
+volume -1
+hstoear hstoear2
+env_tag (Event Collision) (ArrowType SpringVine) (Material Ceramic Glass Gravel Metal Stone Tile)
+
+schema springarrow_wood       // SPRINGVINE ARROW STICKS TO WOOD
+archetype HIT_PROJECTILE
+volume -1
+no_repeat
+ar_rope1 ar_rope2
+env_tag (Event Collision) (ArrowType SpringVine) (Material Wood)
+
+schema springarrow_grate      // SPRINGVINE ARROWS STICK TO METAL GRATES
+archetype HIT_PROJECTILE
+volume -1
+no_repeat
+ar_vine1 ar_vine2
+env_tag (Event Collision) (ArrowType SpringVine) (Material MetGrate)
+
+schema springarrow_soft       // SPRINGVINE ARROWS STICK TO EARTH, ETC.
+archetype HIT_PROJECTILE
+volume -1
+no_repeat
+ar_sprvine1 ar_sprvine2
+env_tag (Event Collision) (ArrowType SpringVine) (Material Earth Carpet Vegetation)
 
 //---------------------------------------------------------------
 
@@ -477,7 +506,7 @@ schema sword_ice
 archetype HIT_PROJECTILE
 sw_ice1 sw_ice2 sw_ice3
 env_tag (Event Collision) (WeaponType Blackjack Sword Hammer) (Material Ice Snow) 
-env_tag (Event Collision) (ArrowType Broadhead Rope Vine) (Material Ice Snow) 
+env_tag (Event Collision) (ArrowType Broadhead Rope Vine SpringVine) (Material Ice Snow) 
 
 schema sword_sword
 archetype HIT_MELEE

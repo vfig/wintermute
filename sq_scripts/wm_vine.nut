@@ -71,7 +71,7 @@ class SpringVine extends SqRootScript {
                 Object.EndCreate(Joint);
             }
         }
-        Reply(attach? ePhysMessageResult.kPM_NonPhys:ePhysMessageResult.kPM_Slay);
+        Reply(attach? ePhysMessageResult.kPM_NonPhys:ePhysMessageResult.kPM_Bounce);
     }
 
     function OnFrobWorldEnd() {

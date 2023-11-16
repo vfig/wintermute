@@ -115,3 +115,7 @@ use_MudArrow: "This arrow spreads a layer of rich soil where it impacts, \
 which silences footsteps. When watered, the soil will grow a deep, soft
 carpet of vegetation that will break your falls, and is lusciously comfortable \
 to sleep in. Cost:125"
+
+use_SpringVine: "This arrow's clinging vines will take root on wood or \
+grillwork, deploying a climable vine. But the vines grow best when \
+planted in fresh soil. Cost: 200."
