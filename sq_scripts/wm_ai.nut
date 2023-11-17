@@ -6,22 +6,41 @@ enum eFrobObjectFlags {
 }
 
 class FrontDeskPerson extends SqRootScript {
-    // function OnPatrolPoint() {
-    //     local trol = message().patrolObj;
-    //     // if (Property.Possessed(trol, "AI_WtchPnt")
-    //     // && !Link.AnyExist("AIWatchObj", self, trol)) {
-    //     //     Link.Create("AIWatchObj", self, trol);
-    //     // }
-    //     if (Property.Possessed(trol, "AI_Converation")) {
-    //         if (!Link.AnyExist("AIConversationActor", trol)) {
-    //             print("Created link.");
-    //             local link = Link.Create("AIConversationActor", trol, self);
-    //             LinkTools.LinkSetData(link, "Actor ID", 1);
-    //         }
-    //         local ok = AI.StartConversation(trol);
-    //         print("Conversation result: "+ok);
-    //     }
-    // }
+    function OnAlertness() {
+        if (message().level>message().oldLevel
+        && message().level>=2) {
+            // Interrupt any 'GoTo' action we might be doing
+            AI.ClearGoals(self);
+            // Drop anything in our hands.
+            DropAltContained();
+        }
+    }
+
+    function GetAltContained() {
+        foreach (link in Link.GetAll("Contains", self)) {
+            local type = LinkTools.LinkGetData(link, "");
+            if (type==eDarkContainType.kContainTypeAlt) {
+                return LinkDest(link);
+            }
+        }
+    }
+
+    function DropAltContained() {
+        local obj = GetAltContained();
+        if (obj==0) return;
+        print("dropping "+obj);
+        Link.DestroyMany("Contains", self, obj);
+        Object.RemoveMetaProperty(self, "FrobInert");
+        local arch = Object.Archetype(obj);
+        if (Property.Possessed(arch, "PhysType")) {
+            Property.Add(obj, "PhysType");
+        }
+    }
+
+    function OnPatrolPoint() {
+        local trol = message().patrolObj;
+        SendMessage(trol, "PatrolPointReached");
+    }
 
     // If we are 'busy', all inquiry messages return false to cancel their
     // pseudoscripts until later. Prevents overlap e.g. immediately returning
@@ -127,6 +146,31 @@ class FrontDeskPerson extends SqRootScript {
         }
     }
 
+    function OnIfRandom_() {
+        if (IsBusy()) {
+            print("... busy.");
+            Reply(false);
+            return;
+        }
+        local chance = message().data
+        if (chance==null) {
+            chance = 50;
+        } else {
+            chance = chance.tointeger();
+        }
+        print("Do I roll < "+chance+"?")
+        local roll = Data.RandInt(0, 99);
+        if (roll<chance) {
+            print("... yes.");
+            Reply(true);
+            return;
+        } else {
+            print("... no.");
+            Reply(false);
+            return;
+        }
+    }
+
     function OnGoTo() {
         local obj = Object.Named(message().data)
         print("GoTo "+obj+"...")
@@ -226,8 +270,6 @@ class FrontDeskPerson extends SqRootScript {
             } else if (flags&eFrobObjectFlags.kTurnOff) {
                 SendMessage(obj, "TurnOff");
             } else {
-                // TODO - does this break the pseudoscript? do we need to instead
-                //        fake a frob message??? idk???????
                 AI.MakeFrobObj(self, obj);
             }
         }
@@ -253,8 +295,26 @@ class ReturnBroom extends SqRootScript {
             print("... invalid.");
             return;
         }
-        Object.Teleport(obj, vector(), vector(), self);
         Link.DestroyMany("Contains", 0, obj);
-        Object.RemoveMetaProperty(self, "FrobInert");
+        Object.Teleport(obj, vector(), vector(), self);
+        Physics.ControlCurrentPosition(obj);
+        Object.RemoveMetaProperty(obj, "FrobInert");
+    }
+}
+
+class TrigPatrol extends SqRootScript {
+    function OnPatrolPointReached() {
+        if (Locked.IsLocked(self)) return;
+        local msg = "TurnOn";
+        if (HasProperty("TrapFlags")) {
+            local flags = GetProperty("TrapFlags");
+            if (flags&TRAPF_INVERT) {
+                msg = "TurnOff";
+            }
+            if (flags&TRAPF_ONCE) {
+                Property.SetSimple(self, "Locked", true);
+            }
+        }
+        Link.BroadcastOnAllLinks(self, msg, "ControlDevice");
     }
 }
