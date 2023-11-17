@@ -650,3 +650,24 @@ class TweqToggle extends SqRootScript {
             eTweqType.kTweqTypeAll, eTweqDo.kTweqDoReverse);
     }
 }
+
+// When frobbed in the world, sends TurnOn to all CD-linked devices. Simpler
+// than an in-wall button. Respects Script>Trap Control Flags "Once" and
+// "Invert" flags only.
+class TrapFrobRelay extends SqRootScript {
+    function OnFrobWorldEnd() {
+        if (Locked.IsLocked(self)) return;
+        local on = true;
+        if (HasProperty("TrapFlags")) {
+            local flags = GetProperty("TrapFlags");
+            if (flags&TRAPF_INVERT) {
+                on = !on;
+            }
+            if (flags&TRAPF_ONCE) {
+                Property.SetSimple(self, "Locked", true);
+            }
+        }
+        local msg = on? "TurnOn":"TurnOff"
+        Link.BroadcastOnAllLinks(self, msg, "ControlDevice");
+    }
+}
