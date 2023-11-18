@@ -673,123 +673,63 @@ class TrapFrobRelay extends SqRootScript {
 }
 
 class Contraption extends SqRootScript {
-    function OnSim() {
-        // The lucky first contraption to get Sim gets to count them all.
-        if (message().starting) {
-            if (! Quest.Exists("TotalThings")
-            || Quest.Get("TotalThings")==0) {
-                local arch = Object.Named("Contraption");
-                if (arch==0) return false;
-                local count = 0;
-                foreach (link in Link.GetAll("~MetaProp", arch)) {
-                    count += 1;
-                }
-                Quest.Set("TotalThings", count);
+    function IncrementQVar(qvar) {
+        local count = 0;
+        if (Quest.Exists(qvar)) {
+            count = Quest.Get(qvar);
+        }
+        count += 1;
+        Quest.Set(qvar, count);
+        return count;
+    }
+
+    function UpdateCounterQVar(category) {
+        local roomFrobbed = Quest.Get(category+"Frobbed");
+        local roomTotal = Quest.Get(category+"Things");
+        local roomRem = (roomTotal-roomFrobbed);
+        local missFrobbed = Quest.Get("TotalFrobbed");
+        local missTotal = Quest.Get("TotalThings");
+        local missRem = (missTotal-missFrobbed);
+        local digits = missRem*100+roomRem;
+        Quest.Set(category+"Counter", digits);
+    }
+
+    function OnObjRoomTransit() {
+        // We only care about the initial transit as we enter the first room.
+        if (! IsDataSet("Category")) {
+            // Get the room's category.
+            local room = message().ToObjId;
+            local category = "";
+            if (room!=0
+            && Property.Possessed(room, "SchMsg")) {
+                category = Property.Get(room, "SchMsg");
             }
+            if (category=="") {
+                print("ERROR: Contraption "+self+" in room without Schema:Message category.");
+                return null;
+            }
+            SetData("Category", category);
+            // Every contraption needs to count itself for its category
+            // and the total.
+            IncrementQVar(category+"Things");
+            IncrementQVar("TotalThings");
+            UpdateCounterQVar(category);
         }
     }
 
     function OnFrobWorldEnd() {
-        // Increment the qvar.
-        // HACK: we use Idling: Should fidget to indicate if we have been
-        // frobbed, as the property can be read by the ContraptionCounter.
-        local isFrobbed = false;
-        if (HasProperty("AI_Fidget")) {
-            isFrobbed = GetProperty("AI_Fidget");
-        }
-        if (! isFrobbed) {
-            SetProperty("AI_Fidget", true);
-            local count = 0;
-            if (Quest.Exists("FrobbedThings")) {
-                count = Quest.Get("FrobbedThings");
+        if (! IsDataSet("IsFrobbed")) {
+            if (! IsDataSet("Category")) {
+                // Missing a category; do nothing.
+                BlockMessage();
+                return;
             }
-            count += 1;
-            Quest.Set("FrobbedThings", count);
-        }
-    }
-
-    function OnObjRoomTransit() {
-        // Keep a Route link to the room we are in, so all the contraptions
-        // in the room can be identified by the ContraptionCounter.
-        local toRoom = message().ToObjId;
-        Link.DestroyMany("Route", self, 0);
-        if (toRoom!=0) {
-            Link.Create("Route", self, toRoom);
-        }
-    }
-}
-
-class ContraptionCounter extends SqRootScript {
-    function OnBeginScript() {
-        Quest.SubscribeMsg(self, "FrobbedThings");
-        Quest.SubscribeMsg(self, "TotalThings");
-    }
-
-    function OnEndScript() {
-        Quest.UnsubscribeMsg(self, "FrobbedThings");
-        Quest.UnsubscribeMsg(self, "TotalThings");
-    }
-
-    function OnQuestChange() {
-        if (message().m_pName=="FrobbedThings"
-        || message().m_pName=="TotalThings") {
-            Update();
-        }
-    }
-
-    function OnObjRoomTransit() {
-        // Keep a Route link to the room we are in, so that if we update due
-        // to a qvar change, we can still get the correct count.
-        local toRoom = message().ToObjId;
-        Link.DestroyMany("Route", self, 0);
-        if (toRoom!=0) {
-            Link.Create("Route", self, toRoom);
-        }
-        Update();
-    }
-
-    function Update() {
-        // Count the things in our room:
-        local roomFrobbed = 0;
-        local roomTotal = 0;
-        local room = 0;
-        local link = Link.GetOne("Route", self);
-        if (link!=0) {
-            room = LinkDest(link);
-            foreach (link in Link.GetAll("~Route", room)) {
-                local obj = LinkDest(link);
-                if (obj==self) continue;
-                if (Object.InheritsFrom(obj, "Contraption")) {
-                    if (Property.Possessed(obj, "AI_Fidget")) {
-                        local isFrobbed = Property.Get(obj, "AI_Fidget");
-                        if (isFrobbed) roomFrobbed++;
-                    }
-                    roomTotal++;
-                }
-            }
-        }
-        // Get the mission total things.
-        local missFrobbed = 0;
-        if (Quest.Exists("FrobbedThings")) {
-            missFrobbed = Quest.Get("FrobbedThings");
-        }
-        local missTotal = 0;
-        if (Quest.Exists("TotalThings")) {
-            missTotal = Quest.Get("TotalThings");
-        }
-        // Let the Odometer script do the tweqs.
-        local missRem = (missTotal-missFrobbed);
-        local roomRem = (roomTotal-roomFrobbed);
-        local digits = missRem*100+roomRem;
-        Quest.Set("ThingCounter", digits);
-        // Print the totals.
-        if (Version.IsEditor()) {
-            local roomName = Object.GetName(room);
-            print("Contraption count in "+roomName+" ("+room+"): "
-                +roomFrobbed+"/"+roomTotal+" frobbed.");
-            print("Contraption count total: "
-                +missFrobbed+"/"+missTotal+" frobbed.");
-            print("ThingCounter = "+digits);
+            SetData("IsFrobbed", 1);
+            // Count the frob.
+            local category = GetData("Category");
+            IncrementQVar(category+"Frobbed");
+            IncrementQVar("TotalFrobbed");
+            UpdateCounterQVar(category);
         }
     }
 }
