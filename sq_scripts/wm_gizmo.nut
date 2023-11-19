@@ -721,6 +721,7 @@ class Contraption extends SqRootScript {
         if (! IsDataSet("IsFrobbed")) {
             if (! IsDataSet("Category")) {
                 // Missing a category; do nothing.
+                print("ERROR: Contraption "+self+" in room without Schema:Message category.");
                 BlockMessage();
                 return;
             }
