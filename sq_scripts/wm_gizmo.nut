@@ -147,6 +147,7 @@ class ConveyorRider extends SqRootScript {
     function OnSim() {
         if (message().starting) {
             SetData("LastPosition", Object.Position(self));
+            SetData("StuckCount", 0);
             SetOneShotTimer("AmIStuck?", 1.0);
         }
     }
@@ -159,7 +160,17 @@ class ConveyorRider extends SqRootScript {
             SetData("LastPosition", pos);
             if (moved <= 1.0) {
                 print("ConveyorRider "+self+" got stuck; trying to unstick.");
+                local count = GetData("StuckCount");
+                count += 1;
+                if (count>10) {
+                    print("ConveyorRider "+self+" stuck for too long; destroying.");
+                    Object.Destroy(self);
+                    return;
+                }
+                SetData("StuckCount", count);
                 Unstick();
+            } else {
+                SetData("StuckCount", 0);
             }
             SetOneShotTimer("AmIStuck?", 1.0);
         }
