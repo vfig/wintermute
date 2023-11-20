@@ -38,7 +38,7 @@ page_0_decal_2_text: "3. A tedious specification"
 // Readable 1, index decal 0, group 0/64:
 
 page_1: ""
-page_1_decal_0: "#0 0 0 0 art/blue_sump"
+page_1_decal_0: "#0 0 0 0 art/blue_sump_32"
 
 page_1_decal_1: "#64 $ 1 60 50 290"
 page_1_decal_1_text: "NOT DISCOVERED"
