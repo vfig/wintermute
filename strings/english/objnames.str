@@ -256,6 +256,7 @@ Name_strnbox: "Strongbox"
 
 // Wintermute:
 
+Name_Broom: "Broom"
 Name_MudArrow: "Earth Arrow"
 Name_SpringVine: "Springvine Arrow"
-Name_Broom: "Broom"
+Name_WispArrow: "Wisp Arrow"
