@@ -1,12 +1,104 @@
-class WispVulnLight extends SqRootScript {
+// BUG: after doing a few of these, hitting weird issues like:
+//      - Wisper getting a Destroy message (as seen in monolog) but not
+//        actually being destroyed
+//      - Wisper particles not being spawned
+//
+// generally, object weirdness! is my destroying of Owns a problem? or
+// is the Stim-destroyed object a problem? idk..., but i am not happy
+// about these outcomes AT ALL.
+
+class WispVulnLight extends SqAnimLight {
     function OnWispStimStimulus() {
-        print(message().message
-            +" on:"+self
-            +" stimulus:"+message().stimulus
-            +" intensity:"+message().intensity
-            +" from:"+message().from
-            +" source:"+message().source+" dest "+LinkDest(message().source))
+        print(self+" is Wisped for "+message().intensity+" at "+GetTime());
+        if (IsWisped()) {
+            local timer = GetData("WispedTimer");
+            KillTimer(timer);
+        } else {
+            SetData("Wisped", true);
+            SetData("WispWantsOn", IsLightOn());
+        }
+        // TODO: use stimulus intensity as time??
+        local timer = SetOneShotTimer("Unwisp", 1.1);
+        SetData("WispedTimer", timer);
+        ChangeMode(false);
     }
+
+    function OnTimer() {
+        if (message().name=="Unwisp") {
+            print(self+" Unwisping at "+GetTime());
+            local wantsOn = GetData("WispWantsOn");
+            ClearData("WispedTimer");
+            ClearData("Wisped");
+            ClearData("WispWantsOn");
+            if (wantsOn) {
+                TurnOn();
+            }
+        }
+        base.OnTimer();
+    }
+
+    function IsWisped() {
+        if (IsDataSet("Wisped"))
+            return GetData("Wisped");
+        return false;
+    }
+
+    function TurnOn() {
+        if (IsWisped())
+            SetData("WispWantsOn", true);
+        else
+            base.TurnOn();
+    }
+
+    function TurnOff() {
+        if (IsWisped())
+            SetData("WispWantsOn", false);
+        else
+            base.TurnOff();
+    }
+}
+
+class WispedLight extends SqRootScript {
+/*
+    function OnBeginScript() {
+        print("WispedLight "+self+": "+message().message);
+        local mode = Light.GetMode(self);
+        local isOn = !(mode==ANIM_LIGHT_MODE_MINIMUM
+            || mode==ANIM_LIGHT_MODE_EXTINGUISH
+            || mode==ANIM_LIGHT_MODE_SMOOTH_DIM);
+        SetData("IsOn", isOn);
+        SetData("LightMode", mode);
+    }
+
+    function GetOffMode(mode) {
+        switch (mode) {
+            case ANIM_LIGHT_MODE_MAXIMUM: return ANIM_LIGHT_MODE_MINIMUM;
+            case ANIM_LIGHT_MODE_SMOOTH_BRIGHTEN: return ANIM_LIGHT_MODE_SMOOTH_DIM;
+            default: return ANIM_LIGHT_MODE_EXTINGUISH;
+        }
+    }
+
+    function OnWispStimStimulus() {
+        print("WispedLight "+self+": "+message().message
+            +" intensity:"+message().intensity);
+    }
+
+    function OnTurnOn() {
+        SetData("IsOn", true);
+        BlockMessage();
+    }
+
+    function OnTurnOff() {
+        SetData("IsOn", false);
+        BlockMessage();
+    }
+
+    function OnEndScript() {
+        print("WispedLight "+self+": "+message().message);
+
+        SetData("LightMode", mode);
+    }
+*/
 }
 
 class Wisper extends SqRootScript {
