@@ -88,7 +88,6 @@ volume -1500 //was -2000
 Camstop
 env_tag (event Rotate) (CreatureType Camera) (LoopState Stop)
 
-
 //CAMERA SPEECH
 
 //TO ALERT 1

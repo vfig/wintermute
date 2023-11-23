@@ -1,3 +1,14 @@
+// TODO:
+//
+// - sad wisp with no devices (+sound)
+// - adjust wisp range
+// - make lights fade out? in? (more awkward state management if so)
+//       though flickering back on would be nice, if i can wrangle it?
+// - update all the light archetypes it should work with
+// - any other devices it should work with?
+//       turrets!
+// - LIGHTNING
+
 class WispVulnCamera extends SqRootScript {
     function IsTurnedOn() {
         return (! Object.HasMetaProperty(self, "M-AI-Stasis"));
@@ -15,6 +26,7 @@ class WispVulnCamera extends SqRootScript {
         if (stackCount==1) {
             SetData("WispWantsOn", IsTurnedOn());
             SendMessage(self, "TurnOff");
+            Sound.PlayEnvSchema(self, "Event Deactivate", self, message().from, eEnvSoundLoc.kEnvSoundOnObj);
         }
     }
 
@@ -33,6 +45,7 @@ class WispVulnCamera extends SqRootScript {
             ClearData("WispWantsOn");
             if (wantsOn) {
                 SendMessage(self, "TurnOn");
+                Sound.PlayEnvSchema(self, "Event Activate", self, message().from, eEnvSoundLoc.kEnvSoundOnObj);
             }
         }
     }
