@@ -1,13 +1,22 @@
 // TODO:
 //
 // - sad wisp with no devices (+sound)
-// - adjust wisp range
 // - make lights fade out? in? (more awkward state management if so)
 //       though flickering back on would be nice, if i can wrangle it?
-// - update all the light archetypes it should work with
 // - any other devices it should work with?
 //       turrets!
 // - LIGHTNING
+
+class WispVulnerable extends SqRootScript {
+    function OnWispStimStimulus() {
+        local wisper = sLink(message().source).source;
+        // Add ourselves to the wisper's population. 
+        if (! Link.AnyExist("Population", wisper, self)) {
+            Link.Create("Population", wisper, self);
+        }
+    }
+
+}
 
 class WispVulnCamera extends SqRootScript {
     function IsTurnedOn() {
@@ -15,6 +24,11 @@ class WispVulnCamera extends SqRootScript {
     }
 
     function OnWisp() {
+        // TODO: it would be nicer to manage the 'are we still wisped' state
+        //       not with a stack counter, but by looking at whether we are
+        //       still linked from any other wispers. but this would take more
+        //       wrangling over the begin-wisping sequencing, and its not
+        //       worth it right now.
         // Increment the stack count.
         local stackCount = 0;
         if (IsDataSet("Wisped")) {
@@ -63,6 +77,12 @@ class WispVulnCamera extends SqRootScript {
             BlockMessage();
         }
     }
+}
+
+class WispVulnTurret extends SqRootScript {
+    // UGGGGGH... gonna have to reimplement TurretAlert in squirrel,
+    // because we cant simply intercept TurnOns and TurnOffs to manage
+    // turret activation/deactivation.
 }
 
 class WispVulnLight extends SqAnimLight {
@@ -124,31 +144,10 @@ class Wisper extends SqRootScript {
         //       and there is some state mixup happening if we try to create
         //       another object within that frame. So we use a PostMessage()
         //       to defer the core particles creation.
-        // NOTE: This deferred spawn has a side benefit: the poke-back Damage
+        // NOTE: This deferred spawn has a side benefit: the stim processing
         //       happens before our posted message, so by the time we are
         //       ready, we know whether we found any devices to affect.
         PostMessage(self, "WisperReady");
-    }
-
-    /* Stims don't actually tell you what object the stim is from (when the
-       source is on an archetype). But we need to know in order to set up our
-       particle effects. So we have the WispStim-vulnerable objects Poke back
-       at the source (the Wisper), using the same stimulus and themselves as
-       agent. This results in a 0-intensity Damage message on the Wisper,
-       which has the WispStim-vulnerable object as the culprit; so we can get
-       the object's location.
-
-       And so we also use this to keep track of this wispable device, so we
-       can wisp and (later) unwisp it.
-    */
-    function OnDamage() {
-        local stim = Object.Named("WispStim");
-        if (stim==0) return;
-        if (message().kind!=stim) return;
-        local target = message().culprit;
-        if (! Link.AnyExist("Population", self, target)) {
-            Link.Create("Population", self, target);
-        }
     }
 
     function OnWisperReady() {
